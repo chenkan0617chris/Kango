@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { DemandCard } from '@/components/shared/DemandCard'
-import { BidModal } from '@/components/shared/BidModal'
+import { BidModal, type DriverVehicle } from '@/components/shared/BidModal'
 import { useRealtimeDemands } from '@/hooks/useRealtimeDemands'
 import { Inbox, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
@@ -11,9 +11,10 @@ import type { Demand } from '@/types'
 interface Props {
   initialDemands: Demand[]
   myBidDemandIds: string[]
+  driverVehicles: DriverVehicle[]
 }
 
-export function MarketplaceClient({ initialDemands, myBidDemandIds }: Props) {
+export function MarketplaceClient({ initialDemands, myBidDemandIds, driverVehicles }: Props) {
   const t = useTranslations('marketplace')
   const { demands } = useRealtimeDemands(initialDemands)
   const [activeDemand, setActiveDemand] = useState<Demand | null>(null)
@@ -88,6 +89,7 @@ export function MarketplaceClient({ initialDemands, myBidDemandIds }: Props) {
         demand={activeDemand}
         onClose={() => setActiveDemand(null)}
         onSuccess={handleBidSuccess}
+        driverVehicles={driverVehicles}
       />
     </>
   )

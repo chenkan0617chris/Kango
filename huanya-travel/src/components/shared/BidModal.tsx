@@ -4,28 +4,34 @@ import { useState, useMemo } from 'react'
 import { useLocale } from 'next-intl'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
-import { Input, Textarea } from '@/components/ui/Input'
-import { MapPin, ArrowRight, Calendar, Users, TrendingUp, Info } from 'lucide-react'
+import { Textarea } from '@/components/ui/Input'
+import { MapPin, ArrowRight, Calendar, Users, TrendingUp, Info, Car, CheckCircle } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import type { Demand } from '@/types'
 
-const PLATFORM_FEE_RATE = 0.10   // 10%
-const FUEL_COST_PER_KM  = 0.25   // AUD ~$0.25/km (fuel + wear estimate)
+const PLATFORM_FEE_RATE = 0.10
+const FUEL_COST_PER_KM  = 0.25
+
+export interface DriverVehicle {
+  vehicle_type: string
+  vehicle_plate: string
+}
 
 interface BidModalProps {
   demand: Demand | null
   onClose: () => void
   onSuccess: (demandId: string) => void
+  driverVehicles: DriverVehicle[]
 }
 
-export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
+export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModalProps) {
   const locale = useLocale()
-  const [price,   setPrice]   = useState('')
-  const [vehicle, setVehicle] = useState('')
-  const [message, setMessage] = useState('')
-  const [km,      setKm]      = useState('')
-  const [loading, setLoading] = useState(false)
-  const [error,   setError]   = useState('')
+  const [price,           setPrice]           = useState('')
+  const [selectedVehicle, setSelectedVehicle] = useState<DriverVehicle | null>(driverVehicles[0] ?? null)
+  const [message,         setMessage]         = useState('')
+  const [km,              setKm]              = useState('')
+  const [loading,         setLoading]         = useState(false)
+  const [error,           setError]           = useState('')
 
   const calc = useMemo(() => {
     const p = parseFloat(price)
@@ -38,13 +44,11 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
 
   if (!demand) return null
 
-  function fmt(n: number) {
-    return `$${n.toFixed(0)}`
-  }
+  function fmt(n: number) { return `$${n.toFixed(0)}` }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!price || !vehicle) return
+    if (!price || !selectedVehicle) return
     setLoading(true)
     setError('')
 
@@ -66,8 +70,8 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           demand_id:    demand!.id,
-          price:        parseFloat(price),
-          vehicle_info: vehicle,
+          price:        priceNum,
+          vehicle_info: `${selectedVehicle.vehicle_type} · ${selectedVehicle.vehicle_plate}`,
           message:      message || undefined,
         }),
       })
@@ -78,7 +82,8 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
       } else {
         onSuccess(demand!.id)
         onClose()
-        setPrice(''); setVehicle(''); setMessage(''); setKm('')
+        setPrice(''); setMessage(''); setKm('')
+        setSelectedVehicle(driverVehicles[0] ?? null)
       }
     } catch {
       setError('网络错误，请检查连接')
@@ -121,37 +126,36 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
         )}
 
         {/* Price input */}
-        <Input
-          label="报价金额 (AUD)"
-          type="number"
-          min="1"
-          step="1"
-          placeholder="如：280"
-          value={price}
-          onChange={e => setPrice(e.target.value)}
-          required
-          hint="请输入整数，单位澳元"
-        />
+        <div className="space-y-1">
+          <label className="block text-sm font-medium text-gray-700">报价金额 (AUD) <span className="text-red-500">*</span></label>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            placeholder="如：280"
+            value={price}
+            onChange={e => setPrice(e.target.value)}
+            required
+            className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+          />
+          <p className="text-xs text-gray-400">请输入整数，单位澳元</p>
+        </div>
 
-        {/* Profit calculator — appears once price is entered */}
+        {/* Profit calculator */}
         {calc && (
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
               <TrendingUp size={12} />
               预计收益计算
             </div>
-
             <div className="flex justify-between text-sm text-gray-700">
               <span>总报价</span>
               <span className="font-medium">{fmt(parseFloat(price))}</span>
             </div>
-
             <div className="flex justify-between text-sm text-gray-500">
               <span>平台服务费 (10%)</span>
               <span className="text-red-500">－{fmt(calc.platformFee)}</span>
             </div>
-
-            {/* Fuel input inline */}
             <div className="flex items-center justify-between gap-4 text-sm text-gray-500">
               <label className="flex items-center gap-1 shrink-0">
                 预计行驶
@@ -159,11 +163,7 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
               </label>
               <div className="flex items-center gap-1.5">
                 <input
-                  type="number"
-                  min="0"
-                  step="10"
-                  placeholder="0"
-                  value={km}
+                  type="number" min="0" step="10" placeholder="0" value={km}
                   onChange={e => setKm(e.target.value)}
                   className="w-16 text-right border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
                 />
@@ -173,14 +173,12 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
                 )}
               </div>
             </div>
-
             <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
               <span className="text-sm font-semibold text-gray-900">预计纯利</span>
               <span className={`text-base font-bold ${calc.netProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {fmt(calc.netProfit)}
               </span>
             </div>
-
             <p className="text-[11px] text-gray-400 flex items-start gap-1">
               <Info size={10} className="shrink-0 mt-0.5" />
               油费按 $0.25/km 估算（含车耗），实际以出行为准
@@ -188,14 +186,44 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
           </div>
         )}
 
-        <Input
-          label="车辆信息"
-          type="text"
-          placeholder="如：Toyota Alphard 7座，2023年，黑色"
-          value={vehicle}
-          onChange={e => setVehicle(e.target.value)}
-          required
-        />
+        {/* Vehicle selection cards */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">出行车辆 <span className="text-red-500">*</span></label>
+          {driverVehicles.length === 0 ? (
+            <p className="text-sm text-red-500">请先在车辆设置页填写车辆信息</p>
+          ) : (
+            <div className="grid gap-2">
+              {driverVehicles.map((v, i) => {
+                const selected = selectedVehicle?.vehicle_plate === v.vehicle_plate
+                return (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setSelectedVehicle(v)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                      selected
+                        ? 'border-blue-900 bg-blue-50'
+                        : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }`}
+                  >
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${selected ? 'bg-blue-900' : 'bg-gray-100'}`}>
+                      <Car size={16} className={selected ? 'text-white' : 'text-gray-500'} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-sm font-semibold truncate ${selected ? 'text-blue-900' : 'text-gray-900'}`}>
+                        {v.vehicle_type}
+                      </p>
+                      <p className={`text-xs mt-0.5 ${selected ? 'text-blue-600' : 'text-gray-400'}`}>
+                        车牌：{v.vehicle_plate}
+                      </p>
+                    </div>
+                    {selected && <CheckCircle size={18} className="text-blue-900 shrink-0" />}
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </div>
 
         <Textarea
           label="补充说明（可选）"
@@ -208,7 +236,7 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
             取消
           </Button>
-          <Button type="submit" loading={loading} className="flex-1">
+          <Button type="submit" loading={loading} disabled={!selectedVehicle} className="flex-1">
             确认报价
           </Button>
         </div>

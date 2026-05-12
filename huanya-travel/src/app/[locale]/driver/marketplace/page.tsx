@@ -18,7 +18,7 @@ export default async function MarketplacePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, vehicle_plate')
+    .select('role, vehicle_plate, vehicle_type')
     .eq('id', user.id)
     .single()
 
@@ -49,6 +49,10 @@ export default async function MarketplacePage() {
 
   const myBidDemandIds = (myBids ?? []).map((b: { demand_id: string }) => b.demand_id)
 
+  const driverVehicles = profile?.vehicle_type && profile?.vehicle_plate
+    ? [{ vehicle_type: profile.vehicle_type, vehicle_plate: profile.vehicle_plate }]
+    : []
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -69,7 +73,7 @@ export default async function MarketplacePage() {
           <span>{t('tip')}</span>
         </div>
 
-        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} />
+        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} driverVehicles={driverVehicles} />
       </main>
     </div>
   )
