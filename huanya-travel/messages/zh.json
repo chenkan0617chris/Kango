@@ -114,7 +114,9 @@
     "postNew": "发布新需求",
     "noTrips": "还没有行程需求",
     "noTripsSub": "发布您的第一个需求，让司机主动找到您",
-    "postFirst": "发布行程需求"
+    "postFirst": "发布行程需求",
+    "activeSection": "进行中",
+    "endedSection": "已结束"
   },
   "marketplace": {
     "title": "接单大厅",
@@ -202,7 +204,8 @@
     "passengers": "人",
     "luggage": "件行李",
     "submitBid": "提交报价",
-    "touristFallback": "游客"
+    "touristFallback": "游客",
+    "alreadyBid": "已报价"
   },
   "bidModal": {
     "title": "提交报价",

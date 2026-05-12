@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Navbar } from '@/components/shared/Navbar'
 import { MarketplaceClient } from './MarketplaceClient'
 import { Car } from 'lucide-react'
@@ -17,13 +18,16 @@ export default async function MarketplacePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, vehicle_plate')
     .eq('id', user.id)
     .single()
 
   if (profile?.role !== 'driver') redirect('/demand/create')
+  if (!profile?.vehicle_plate) redirect('/driver/vehicle-setup')
 
-  const { data } = await supabase
+  const admin = createAdminClient()
+
+  const { data } = await admin
     .from('demands')
     .select(`
       *,
@@ -35,6 +39,15 @@ export default async function MarketplacePage() {
     .limit(50)
 
   const initialDemands = (data ?? []) as Demand[]
+
+  // Load demands this driver already bid on
+  const { data: myBids } = await supabase
+    .from('bids')
+    .select('demand_id')
+    .eq('driver_id', user.id)
+    .in('status', ['active', 'accepted'])
+
+  const myBidDemandIds = (myBids ?? []).map((b: { demand_id: string }) => b.demand_id)
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -56,7 +69,7 @@ export default async function MarketplacePage() {
           <span>{t('tip')}</span>
         </div>
 
-        <MarketplaceClient initialDemands={initialDemands} />
+        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} />
       </main>
     </div>
   )

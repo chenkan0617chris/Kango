@@ -48,6 +48,18 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
     setLoading(true)
     setError('')
 
+    const priceNum = parseFloat(price)
+    if (demand!.budget_min && priceNum * 100 < demand!.budget_min) {
+      setError(`报价不得低于游客最低预算 $${Math.round(demand!.budget_min / 100)} AUD`)
+      setLoading(false)
+      return
+    }
+    if (demand!.budget_max && priceNum * 100 > demand!.budget_max) {
+      setError(`报价不得高于游客最高预算 $${Math.round(demand!.budget_max / 100)} AUD`)
+      setLoading(false)
+      return
+    }
+
     try {
       const res = await fetch('/api/bids', {
         method: 'POST',

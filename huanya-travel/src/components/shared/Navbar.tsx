@@ -29,9 +29,7 @@ export function Navbar() {
 
   async function signOut() {
     await supabase.auth.signOut()
-    setProfile(null)
-    router.push('/')
-    router.refresh()
+    window.location.href = '/'
   }
 
   const isDriver  = profile?.role === 'driver'

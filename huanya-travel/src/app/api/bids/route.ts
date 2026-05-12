@@ -57,12 +57,16 @@ export async function POST(request: NextRequest) {
   // Verify user is a driver
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, vehicle_plate')
     .eq('id', user.id)
     .single()
 
   if (profile?.role !== 'driver') {
     return NextResponse.json({ error: '只有司机可以报价' }, { status: 403 })
+  }
+
+  if (!profile?.vehicle_plate) {
+    return NextResponse.json({ error: '请先完善您的车辆信息才能报价，前往「车辆设置」页面填写' }, { status: 403 })
   }
 
   const body: CreateBidInput = await request.json()
@@ -75,12 +79,24 @@ export async function POST(request: NextRequest) {
   // Check demand is still open
   const { data: demand } = await supabase
     .from('demands')
-    .select('status')
+    .select('status, budget_min, budget_max')
     .eq('id', demand_id)
     .single()
 
   if (!demand || !['pending', 'bidding'].includes(demand.status)) {
     return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
+  }
+
+  const priceInCents = Math.round(price * 100)
+  if (demand.budget_min && priceInCents < demand.budget_min) {
+    return NextResponse.json({
+      error: `报价不得低于游客最低预算 $${Math.round(demand.budget_min / 100)} AUD`,
+    }, { status: 400 })
+  }
+  if (demand.budget_max && priceInCents > demand.budget_max) {
+    return NextResponse.json({
+      error: `报价不得高于游客最高预算 $${Math.round(demand.budget_max / 100)} AUD`,
+    }, { status: 400 })
   }
 
   const { data, error } = await supabase
@@ -105,8 +121,12 @@ export async function POST(request: NextRequest) {
 
   // Transition demand to 'bidding' if still 'pending' — use admin client to bypass RLS
   if (demand.status === 'pending') {
-    const admin = createAdminClient()
-    await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
+    try {
+      const admin = createAdminClient()
+      await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
+    } catch (e) {
+      console.error('Failed to transition demand to bidding:', e)
+    }
   }
 
   return NextResponse.json({ data }, { status: 201 })

@@ -14,9 +14,10 @@ interface DemandCardProps {
   onBid?: (demand: Demand) => void
   bidCount?: number
   href?: string
+  alreadyBid?: boolean
 }
 
-export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCardProps) {
+export function DemandCard({ demand, mode, onBid, bidCount = 0, href, alreadyBid = false }: DemandCardProps) {
   const locale = useLocale()
   const t = useTranslations('demandCard')
   const canBid = mode === 'driver' && ['pending', 'bidding'].includes(demand.status)
@@ -100,15 +101,15 @@ export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCa
           )
         )}
 
-        {canBid && (
+        {canBid && !alreadyBid && (
           <Button size="sm" onClick={() => onBid?.(demand)}>
             {t('submitBid')}
           </Button>
         )}
 
-        {mode === 'driver' && !canBid && (
-          <span className="text-xs text-gray-400">
-            {bidCount > 0 ? t('bids', { count: bidCount }) : ''}
+        {mode === 'driver' && (alreadyBid || !canBid) && (
+          <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${alreadyBid ? 'bg-green-50 text-green-700' : 'text-gray-400'}`}>
+            {alreadyBid ? t('alreadyBid') : (bidCount > 0 ? t('bids', { count: bidCount }) : '')}
           </span>
         )}
       </div>

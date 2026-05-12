@@ -10,13 +10,14 @@ import type { Demand } from '@/types'
 
 interface Props {
   initialDemands: Demand[]
+  myBidDemandIds: string[]
 }
 
-export function MarketplaceClient({ initialDemands }: Props) {
+export function MarketplaceClient({ initialDemands, myBidDemandIds }: Props) {
   const t = useTranslations('marketplace')
   const { demands } = useRealtimeDemands(initialDemands)
   const [activeDemand, setActiveDemand] = useState<Demand | null>(null)
-  const [justBid, setJustBid]           = useState<Set<string>>(new Set())
+  const [justBid, setJustBid] = useState<Set<string>>(new Set(myBidDemandIds))
 
   function handleBidSuccess(demandId: string) {
     setJustBid(prev => new Set(prev).add(demandId))
@@ -73,6 +74,7 @@ export function MarketplaceClient({ initialDemands }: Props) {
                     key={demand.id}
                     demand={demand}
                     mode="driver"
+                    alreadyBid
                     bidCount={(demand.bids as unknown as { count: number }[])?.[0]?.count ?? 0}
                   />
                 ))}

@@ -114,7 +114,9 @@
     "postNew": "Post New Trip",
     "noTrips": "No trips yet",
     "noTripsSub": "Post your first trip request and let drivers find you.",
-    "postFirst": "Post a Trip"
+    "postFirst": "Post a Trip",
+    "activeSection": "Active",
+    "endedSection": "Ended"
   },
   "marketplace": {
     "title": "Marketplace",
@@ -202,7 +204,8 @@
     "passengers": "pax",
     "luggage": "luggage",
     "submitBid": "Submit Bid",
-    "touristFallback": "Tourist"
+    "touristFallback": "Tourist",
+    "alreadyBid": "Already Bid"
   },
   "bidModal": {
     "title": "Submit a Bid",

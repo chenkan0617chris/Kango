@@ -6,7 +6,16 @@ import { DemandCard } from '@/components/shared/DemandCard'
 import { Button } from '@/components/ui/Button'
 import { Plus, Inbox } from 'lucide-react'
 import { getTranslations } from 'next-intl/server'
-import type { Demand } from '@/types'
+import type { Demand, DemandStatus } from '@/types'
+
+export const revalidate = 0
+
+function statusPriority(s: DemandStatus): number {
+  if (s === 'confirmed' || s === 'in_progress') return 0
+  if (s === 'bidding') return 1
+  if (s === 'pending') return 2
+  return 10
+}
 
 export default async function TouristDashboard() {
   const t = await getTranslations('dashboard')
@@ -22,9 +31,19 @@ export default async function TouristDashboard() {
       bids!demand_id(count)
     `)
     .eq('tourist_id', user.id)
-    .order('created_at', { ascending: false })
+    .order('travel_date', { ascending: true })
 
   const list = (demands ?? []) as (Demand & { bids: { count: number }[] })[]
+
+  const active = list
+    .filter(d => ['pending', 'bidding', 'confirmed', 'in_progress'].includes(d.status))
+    .sort((a, b) => {
+      const p = statusPriority(a.status) - statusPriority(b.status)
+      if (p !== 0) return p
+      return a.travel_date.localeCompare(b.travel_date)
+    })
+
+  const ended = list.filter(d => ['completed', 'cancelled'].includes(d.status))
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -56,16 +75,39 @@ export default async function TouristDashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid sm:grid-cols-2 gap-4">
-            {list.map(demand => (
-              <DemandCard
-                key={demand.id}
-                demand={demand}
-                mode="tourist"
-                bidCount={demand.bids?.[0]?.count ?? 0}
-                href={`/demand/${demand.id}`}
-              />
-            ))}
+          <div className="space-y-8">
+            {active.length > 0 && (
+              <section>
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{t('activeSection')}</h2>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {active.map(demand => (
+                    <DemandCard
+                      key={demand.id}
+                      demand={demand}
+                      mode="tourist"
+                      bidCount={demand.bids?.[0]?.count ?? 0}
+                      href={`/demand/${demand.id}`}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+            {ended.length > 0 && (
+              <section>
+                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">{t('endedSection')}</h2>
+                <div className="grid sm:grid-cols-2 gap-4 opacity-60">
+                  {ended.map(demand => (
+                    <DemandCard
+                      key={demand.id}
+                      demand={demand}
+                      mode="tourist"
+                      bidCount={demand.bids?.[0]?.count ?? 0}
+                      href={`/demand/${demand.id}`}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         )}
       </main>
