@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
+import { useLocale } from 'next-intl'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Input, Textarea } from '@/components/ui/Input'
@@ -18,6 +19,7 @@ interface BidModalProps {
 }
 
 export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
+  const locale = useLocale()
   const [price,   setPrice]   = useState('')
   const [vehicle, setVehicle] = useState('')
   const [message, setMessage] = useState('')
@@ -86,7 +88,7 @@ export function BidModal({ demand, onClose, onSuccess }: BidModalProps) {
         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-blue-700">
           <span className="flex items-center gap-1">
             <Calendar size={12} />
-            {formatDate(demand.travel_date)}
+            {formatDate(demand.travel_date, locale)}
             {demand.travel_time && ` · ${demand.travel_time.slice(0, 5)}`}
           </span>
           <span className="flex items-center gap-1">

@@ -1,4 +1,7 @@
+'use client'
+
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { MapPin, Calendar, Users, Luggage, DollarSign, ArrowRight, Star } from 'lucide-react'
 import { DemandStatusBadge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -14,6 +17,8 @@ interface DemandCardProps {
 }
 
 export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCardProps) {
+  const locale = useLocale()
+  const t = useTranslations('demandCard')
   const canBid = mode === 'driver' && ['pending', 'bidding'].includes(demand.status)
 
   return (
@@ -37,16 +42,16 @@ export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCa
       <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm text-gray-600 mb-4">
         <span className="flex items-center gap-1.5">
           <Calendar size={13} className="text-gray-400" />
-          {formatDate(demand.travel_date)}
+          {formatDate(demand.travel_date, locale)}
           {demand.travel_time && ` · ${demand.travel_time.slice(0, 5)}`}
         </span>
         <span className="flex items-center gap-1.5">
           <Users size={13} className="text-gray-400" />
-          {demand.pax_count} 人
+          {demand.pax_count} {t('passengers')}
         </span>
         <span className="flex items-center gap-1.5">
           <Luggage size={13} className="text-gray-400" />
-          {demand.luggage_count} 件行李
+          {demand.luggage_count} {t('luggage')}
         </span>
         {(demand.budget_min || demand.budget_max) && (
           <span className="flex items-center gap-1.5">
@@ -72,7 +77,7 @@ export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCa
             <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-medium text-[10px]">
               {demand.tourist.full_name?.[0] ?? 'U'}
             </div>
-            <span>{demand.tourist.full_name ?? '游客'}</span>
+            <span>{demand.tourist.full_name ?? t('touristFallback')}</span>
             <span className="flex items-center gap-0.5 text-yellow-500">
               <Star size={10} fill="currentColor" />
               {demand.tourist.rating?.toFixed(1) ?? '5.0'}
@@ -86,24 +91,24 @@ export function DemandCard({ demand, mode, onBid, bidCount = 0, href }: DemandCa
               href={href}
               className="text-sm text-blue-700 font-medium hover:underline"
             >
-              {bidCount > 0 ? `查看 ${bidCount} 个报价 →` : '等待报价 →'}
+              {bidCount > 0 ? t('viewBids', { count: bidCount }) : t('waitingBids')}
             </Link>
           ) : (
             <span className="text-xs text-gray-500">
-              {bidCount > 0 ? `${bidCount} 个报价` : '暂无报价'}
+              {bidCount > 0 ? t('bids', { count: bidCount }) : t('zeroBids')}
             </span>
           )
         )}
 
         {canBid && (
           <Button size="sm" onClick={() => onBid?.(demand)}>
-            提交报价
+            {t('submitBid')}
           </Button>
         )}
 
         {mode === 'driver' && !canBid && (
           <span className="text-xs text-gray-400">
-            {bidCount > 0 ? `${bidCount} 个报价` : ''}
+            {bidCount > 0 ? t('bids', { count: bidCount }) : ''}
           </span>
         )}
       </div>

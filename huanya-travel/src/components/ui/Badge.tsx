@@ -1,3 +1,6 @@
+'use client'
+
+import { useTranslations } from 'next-intl'
 import type { DemandStatus, BidStatus } from '@/types'
 
 type Color = 'gray' | 'blue' | 'green' | 'yellow' | 'red' | 'purple'
@@ -20,27 +23,11 @@ const demandStatusColor: Record<DemandStatus, Color> = {
   cancelled:   'red',
 }
 
-const demandStatusLabel: Record<DemandStatus, string> = {
-  pending:     '等待报价',
-  bidding:     '竞价中',
-  confirmed:   '已确认',
-  in_progress: '行程中',
-  completed:   '已完成',
-  cancelled:   '已取消',
-}
-
 const bidStatusColor: Record<BidStatus, Color> = {
   active:    'blue',
   accepted:  'green',
   rejected:  'red',
   withdrawn: 'gray',
-}
-
-const bidStatusLabel: Record<BidStatus, string> = {
-  active:    '报价中',
-  accepted:  '已接受',
-  rejected:  '未入选',
-  withdrawn: '已撤回',
 }
 
 interface BadgeProps {
@@ -57,9 +44,11 @@ export function Badge({ label, color = 'gray' }: BadgeProps) {
 }
 
 export function DemandStatusBadge({ status }: { status: DemandStatus }) {
-  return <Badge label={demandStatusLabel[status]} color={demandStatusColor[status]} />
+  const t = useTranslations('badge')
+  return <Badge label={t(status)} color={demandStatusColor[status]} />
 }
 
 export function BidStatusBadge({ status }: { status: BidStatus }) {
-  return <Badge label={bidStatusLabel[status]} color={bidStatusColor[status]} />
+  const t = useTranslations('badge')
+  return <Badge label={t(status)} color={bidStatusColor[status]} />
 }

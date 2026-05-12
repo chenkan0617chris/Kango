@@ -14,7 +14,7 @@ export function useRealtimeDemands(initial: Demand[] = []) {
       .select(`
         *,
         tourist:profiles!tourist_id(id, full_name, avatar_url, rating, total_trips),
-        bids(count)
+        bids!demand_id(count)
       `)
       .eq('id', demandId)
       .single()

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { CreateBidInput } from '@/types'
 
 // GET /api/bids?demand_id=xxx — list bids for a demand
@@ -10,8 +11,26 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const demandId = new URL(request.url).searchParams.get('demand_id')
-  if (!demandId) return NextResponse.json({ error: '缺少 demand_id' }, { status: 400 })
+  const { searchParams } = new URL(request.url)
+  const demandId = searchParams.get('demand_id')
+  const mine     = searchParams.get('mine')
+
+  if (mine === 'true') {
+    const { data, error } = await supabase
+      .from('bids')
+      .select(`
+        *,
+        demand:demands!demand_id(id, pickup_loc, dropoff_loc, travel_date, travel_time, status),
+        driver:profiles!driver_id(id, full_name, avatar_url, rating)
+      `)
+      .eq('driver_id', user.id)
+      .order('created_at', { ascending: false })
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ data })
+  }
+
+  if (!demandId) return NextResponse.json({ error: '缺少 demand_id 或 mine=true' }, { status: 400 })
 
   const { data, error } = await supabase
     .from('bids')
@@ -84,9 +103,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // Transition demand to 'bidding' if still 'pending'
+  // Transition demand to 'bidding' if still 'pending' — use admin client to bypass RLS
   if (demand.status === 'pending') {
-    await supabase.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
+    const admin = createAdminClient()
+    await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
   }
 
   return NextResponse.json({ data }, { status: 201 })
