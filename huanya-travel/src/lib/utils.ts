@@ -21,14 +21,18 @@ export function dollarsToCents(dollars: number): number {
   return Math.round(dollars * 100)
 }
 
-export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('zh-AU', {
+function appToDateLocale(locale: string): string {
+  return locale === 'zh' ? 'zh-CN' : 'en-AU'
+}
+
+export function formatDate(dateStr: string, locale = 'en'): string {
+  return new Date(dateStr).toLocaleDateString(appToDateLocale(locale), {
     year: 'numeric', month: 'long', day: 'numeric',
   })
 }
 
-export function formatDateTime(dateStr: string): string {
-  return new Date(dateStr).toLocaleString('zh-AU', {
+export function formatDateTime(dateStr: string, locale = 'en'): string {
+  return new Date(dateStr).toLocaleString(appToDateLocale(locale), {
     year: 'numeric', month: 'short', day: 'numeric',
     hour: '2-digit', minute: '2-digit',
   })

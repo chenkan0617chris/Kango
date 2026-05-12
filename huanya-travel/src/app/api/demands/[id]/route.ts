@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 // GET /api/demands/[id] — demand detail with all bids
 export async function GET(
@@ -18,7 +19,7 @@ export async function GET(
     .select(`
       *,
       tourist:profiles!tourist_id(id, full_name, avatar_url, rating, total_trips),
-      bids(
+      bids!demand_id(
         *,
         driver:profiles!driver_id(id, full_name, avatar_url, rating, total_trips, vehicle_type, is_verified)
       )
@@ -58,34 +59,48 @@ export async function PATCH(
 
   // Accept a bid: mark bid accepted, reject others, create order, lock demand
   if (body.action === 'accept_bid' && body.bid_id) {
+    if (!['pending', 'bidding'].includes(demand.status)) {
+      return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
+    }
+
     const { data: bid } = await supabase
       .from('bids')
-      .select('id, price, driver_id')
+      .select('id, price, driver_id, status')
       .eq('id', body.bid_id)
       .eq('demand_id', id)
       .single()
 
     if (!bid) return NextResponse.json({ error: '报价不存在' }, { status: 404 })
+    if (bid.status !== 'active') return NextResponse.json({ error: '该报价已失效' }, { status: 400 })
+
+    // Use admin client to bypass RLS — tourist cannot write to bids/orders rows owned by drivers
+    const admin = createAdminClient()
 
     // Reject all other active bids
-    await supabase
+    const { error: rejectErr } = await admin
       .from('bids')
       .update({ status: 'rejected' })
       .eq('demand_id', id)
       .eq('status', 'active')
       .neq('id', body.bid_id)
+    if (rejectErr) return NextResponse.json({ error: rejectErr.message }, { status: 500 })
 
     // Accept the chosen bid
-    await supabase.from('bids').update({ status: 'accepted' }).eq('id', body.bid_id)
+    const { error: acceptErr } = await admin
+      .from('bids')
+      .update({ status: 'accepted' })
+      .eq('id', body.bid_id)
+    if (acceptErr) return NextResponse.json({ error: acceptErr.message }, { status: 500 })
 
     // Lock the demand
-    await supabase
+    const { error: demandErr } = await admin
       .from('demands')
       .update({ status: 'confirmed', accepted_bid_id: body.bid_id })
       .eq('id', id)
+    if (demandErr) return NextResponse.json({ error: demandErr.message }, { status: 500 })
 
     // Create order
-    const { data: order, error: orderErr } = await supabase
+    const { data: order, error: orderErr } = await admin
       .from('orders')
       .insert({
         demand_id:  id,

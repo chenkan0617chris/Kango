@@ -40,15 +40,18 @@ export async function PATCH(
 
   const { data: order } = await supabase
     .from('orders')
-    .select('tourist_id, payment_status')
+    .select('tourist_id, driver_id, payment_status, trip_status')
     .eq('id', id)
     .single()
 
-  if (!order || order.tourist_id !== user.id) {
+  if (!order || (order.tourist_id !== user.id && order.driver_id !== user.id)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
   if (body.action === 'pay_deposit') {
+    if (order.tourist_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
     if (order.payment_status !== 'unpaid') {
       return NextResponse.json({ error: '已支付，请勿重复操作' }, { status: 400 })
     }
@@ -59,6 +62,35 @@ export async function PATCH(
         payment_status: 'deposited',
         tourist_confirmed_at: new Date().toISOString(),
       })
+      .eq('id', id)
+      .select()
+      .single()
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ data })
+  }
+
+  if (body.action === 'update_trip_status') {
+    if (order.driver_id !== user.id) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const { trip_status: newStatus } = body
+    const validTransitions: Record<string, string> = {
+      confirmed:   'in_progress',
+      in_progress: 'completed',
+    }
+
+    if (validTransitions[order.trip_status] !== newStatus) {
+      return NextResponse.json({ error: '无效的状态转换' }, { status: 400 })
+    }
+
+    const updates: Record<string, string> = { trip_status: newStatus }
+    if (newStatus === 'completed') updates.payment_status = 'paid_in_full'
+
+    const { data, error } = await supabase
+      .from('orders')
+      .update(updates)
       .eq('id', id)
       .select()
       .single()

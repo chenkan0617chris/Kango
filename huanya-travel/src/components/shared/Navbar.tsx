@@ -1,13 +1,16 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
+import { Link, useRouter, usePathname } from '@/i18n/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Car, ChevronDown, LogOut, Menu, X, UserCircle } from 'lucide-react'
+import { useTranslations, useLocale } from 'next-intl'
+import { LanguageSwitcher } from './LanguageSwitcher'
 import type { Profile } from '@/types'
 
 export function Navbar() {
+  const t = useTranslations('nav')
+  const locale = useLocale()
   const [profile, setProfile]   = useState<Profile | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropOpen, setDropOpen] = useState(false)
@@ -36,11 +39,14 @@ export function Navbar() {
   const initial   = profile?.full_name?.[0]?.toUpperCase() ?? '?'
 
   const navLinks = isDriver
-    ? [{ href: '/driver/marketplace', label: '接单大厅' }]
+    ? [
+        { href: '/driver/marketplace' as const, label: t('marketplace') },
+        { href: '/driver/bids' as const,        label: t('myBids') },
+      ]
     : isTourist
     ? [
-        { href: '/demand/create',     label: '发布需求' },
-        { href: '/tourist/dashboard', label: '我的行程' },
+        { href: '/demand/create' as const,     label: t('postDemand') },
+        { href: '/tourist/dashboard' as const, label: t('myTrips') },
       ]
     : []
 
@@ -54,7 +60,9 @@ export function Navbar() {
           <div className="w-8 h-8 bg-blue-900 rounded-lg flex items-center justify-center">
             <Car size={16} className="text-white" />
           </div>
-          <span className="font-bold text-gray-900 text-lg tracking-tight">环亚出行</span>
+          <span className="font-bold text-gray-900 text-lg tracking-tight">
+            {locale === 'zh' ? '环亚出行' : 'HuanYa Travel'}
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -76,6 +84,8 @@ export function Navbar() {
 
         {/* Right side */}
         <div className="flex items-center gap-2">
+          <LanguageSwitcher />
+
           {profile ? (
             <div className="relative">
               <button
@@ -95,16 +105,16 @@ export function Navbar() {
                 <div className="absolute right-0 top-11 w-48 bg-white border border-gray-200 rounded-xl shadow-lg py-1 z-50 animate-fadeIn">
                   <div className="px-4 py-2.5 border-b border-gray-100">
                     <p className="text-xs font-semibold text-gray-900 truncate">{profile.full_name}</p>
-                    <p className="text-xs text-gray-500">{isDriver ? '认证司机' : '游客'}</p>
+                    <p className="text-xs text-gray-500">{isDriver ? t('verifiedDriver') : t('tourist')}</p>
                   </div>
                   {profileHref && (
                     <Link
-                      href={profileHref}
+                      href={profileHref as '/'}
                       onClick={() => setDropOpen(false)}
                       className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                     >
                       <UserCircle size={14} className="text-gray-400" />
-                      我的名片
+                      {t('myCard')}
                     </Link>
                   )}
                   <button
@@ -112,7 +122,7 @@ export function Navbar() {
                     className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                   >
                     <LogOut size={14} />
-                    退出登录
+                    {t('signOut')}
                   </button>
                 </div>
               )}
@@ -120,10 +130,10 @@ export function Navbar() {
           ) : (
             <div className="hidden sm:flex items-center gap-2">
               <Link href="/login" className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg hover:bg-gray-50 transition-colors">
-                登录
+                {t('login')}
               </Link>
               <Link href="/register" className="px-4 py-1.5 text-sm font-medium text-white bg-blue-900 rounded-lg hover:bg-blue-800 transition-colors">
-                注册
+                {t('register')}
               </Link>
             </div>
           )}
@@ -153,17 +163,17 @@ export function Navbar() {
           ))}
           {profile && profileHref && (
             <Link
-              href={profileHref}
+              href={profileHref as '/'}
               onClick={() => setMenuOpen(false)}
               className="block px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg"
             >
-              我的名片
+              {t('myCard')}
             </Link>
           )}
           {!profile && (
             <>
-              <Link href="/login" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">登录</Link>
-              <Link href="/register" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-blue-900 hover:bg-blue-50 rounded-lg">注册</Link>
+              <Link href="/login" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">{t('login')}</Link>
+              <Link href="/register" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-blue-900 hover:bg-blue-50 rounded-lg">{t('register')}</Link>
             </>
           )}
         </div>
