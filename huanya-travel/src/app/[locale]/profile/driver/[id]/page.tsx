@@ -3,13 +3,14 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import {
-  Star, Car, Shield, BadgeCheck, MapPin,
-  ArrowRight, Calendar, ChevronLeft,
+  Star, Car, Shield, BadgeCheck,
+  ChevronLeft,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { VehicleEditForm } from './VehicleEditForm'
 import type { Profile } from '@/types'
 
-export const revalidate = 60
+export const revalidate = 0
 
 function StarRating({ rating }: { rating: number }) {
   return (
@@ -34,14 +35,14 @@ export default async function DriverProfilePage({
   const { id, locale } = await params
   const supabase = await createClient()
 
-  const { data: driver, error } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .eq('role', 'driver')
-    .single()
+  const [{ data: driver }, { data: { user } }] = await Promise.all([
+    supabase.from('profiles').select('*').eq('id', id).eq('role', 'driver').maybeSingle(),
+    supabase.auth.getUser(),
+  ])
 
-  if (error || !driver) notFound()
+  if (!driver) notFound()
+
+  const isOwner = user?.id === id
 
   const profile = driver as Profile
 
@@ -126,41 +127,33 @@ export default async function DriverProfilePage({
             车辆信息
           </h2>
 
-          <div className="space-y-3">
-            {profile.vehicle_type && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">车型类别</span>
-                <span className="font-medium text-gray-900">{profile.vehicle_type}</span>
-              </div>
-            )}
-            {profile.vehicle_plate && (
-              <div className="flex justify-between items-center text-sm">
-                <span className="text-gray-500">车牌号码</span>
-                <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
-                  {profile.vehicle_plate}
-                </span>
-              </div>
-            )}
-
-            {/* Vehicle photo */}
-            {profile.vehicle_photo_url ? (
-              <div className="mt-4 rounded-xl overflow-hidden border border-gray-100">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={profile.vehicle_photo_url}
-                  alt="车辆照片"
-                  className="w-full h-48 object-cover"
-                />
-              </div>
-            ) : (
-              <div className="mt-2 h-32 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center">
-                <div className="text-center">
-                  <Car size={24} className="mx-auto text-gray-300 mb-1" />
-                  <p className="text-xs text-gray-400">暂无车辆照片</p>
+          {isOwner ? (
+            <VehicleEditForm
+              driverId={id}
+              initialVehicleType={profile.vehicle_type ?? null}
+              initialPlate={profile.vehicle_plate ?? null}
+            />
+          ) : (
+            <div className="space-y-3">
+              {profile.vehicle_type && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">车型</span>
+                  <span className="font-medium text-gray-900">{profile.vehicle_type}</span>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+              {profile.vehicle_plate && (
+                <div className="flex justify-between items-center text-sm">
+                  <span className="text-gray-500">车牌号码</span>
+                  <span className="font-mono font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded">
+                    {profile.vehicle_plate}
+                  </span>
+                </div>
+              )}
+              {!profile.vehicle_type && !profile.vehicle_plate && (
+                <p className="text-sm text-gray-400">暂无车辆信息</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* DA / Accreditation */}

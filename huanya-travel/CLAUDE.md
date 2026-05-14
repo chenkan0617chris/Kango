@@ -71,7 +71,7 @@ Server components use `createClient()` from `@/lib/supabase/server` (cookie-base
 | `orders` | `demand_id`, `bid_id`, `tourist_id`, `driver_id`, `amount`, `payment_status`, `trip_status` | Created when a bid is accepted |
 
 **Status enums** (defined in `src/types/index.ts`):
-- `DemandStatus`: `pending → bidding → confirmed → in_progress → completed | cancelled`
+- `DemandStatus`: `pending → confirmed → in_progress → completed | cancelled`
 - `BidStatus`: `active → accepted | rejected | withdrawn`
 - `PaymentStatus`: `unpaid → deposited → paid_in_full | refunded`
 - `TripStatus`: `confirmed → in_progress → completed | disputed | cancelled`

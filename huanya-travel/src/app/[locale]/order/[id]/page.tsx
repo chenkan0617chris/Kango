@@ -5,9 +5,10 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { Navbar } from '@/components/shared/Navbar'
 import { Button } from '@/components/ui/Button'
 import { DriverStatusClient } from './DriverStatusClient'
+import { TripRoute } from '@/components/shared/TripRoute'
 import {
-  CheckCircle, MapPin, Calendar, Phone, Car,
-  ArrowRight, Shield, Lock, Star, Users,
+  CheckCircle, Calendar, Phone, Car,
+  Shield, Lock, Star, Users,
 } from 'lucide-react'
 import { formatAUD, formatDate } from '@/lib/utils'
 import { getTranslations } from 'next-intl/server'
@@ -30,23 +31,23 @@ export default async function OrderPage({
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   // Use admin client — RLS may restrict drivers from reading orders/demands/bids they don't own as tourist
   const admin = createAdminClient()
-  const { data, error } = await admin
+  const { data } = await admin
     .from('orders')
     .select(`
       *,
-      demand:demands!demand_id(pickup_loc, dropoff_loc, travel_date, travel_time, pax_count, luggage_count, note),
+      demand:demands!demand_id(pickup_loc, waypoints, dropoff_loc, return_loc, travel_date, travel_time, pax_count, luggage_count, note),
       bid:bids!bid_id(price, vehicle_info),
       driver:profiles!driver_id(id, full_name, phone, avatar_url, rating, total_trips, vehicle_type, vehicle_plate, is_verified),
       tourist:profiles!tourist_id(id, full_name, phone)
     `)
     .eq('id', id)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) {
+  if (!data) {
     redirect(profile?.role === 'driver' ? '/driver/marketplace' : '/tourist/dashboard')
   }
 
@@ -87,16 +88,13 @@ export default async function OrderPage({
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-5">
           <h2 className="font-semibold text-gray-900 mb-4">{t('tripDetails')}</h2>
           <div className="space-y-3 text-sm text-gray-700">
-            <div className="flex items-start gap-2">
-              <MapPin size={15} className="text-blue-900 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-medium">{order.demand.pickup_loc}</p>
-                <div className="flex items-center gap-1 text-gray-500">
-                  <ArrowRight size={11} />
-                  <p>{order.demand.dropoff_loc}</p>
-                </div>
-              </div>
-            </div>
+            <TripRoute
+              pickup={order.demand.pickup_loc}
+              dropoff={order.demand.dropoff_loc}
+              waypoints={order.demand.waypoints}
+              returnLoc={order.demand.return_loc}
+              size="sm"
+            />
             <div className="flex items-center gap-2 text-gray-600">
               <Calendar size={14} className="text-gray-400 shrink-0" />
               <span>

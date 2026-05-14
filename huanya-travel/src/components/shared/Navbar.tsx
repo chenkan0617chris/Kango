@@ -11,27 +11,34 @@ import type { Profile } from '@/types'
 export function Navbar() {
   const t = useTranslations('nav')
   const locale = useLocale()
-  const [profile, setProfile]   = useState<Profile | null>(null)
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [dropOpen, setDropOpen] = useState(false)
+  const [profile, setProfile]     = useState<Profile | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [menuOpen, setMenuOpen]   = useState(false)
+  const [dropOpen, setDropOpen]   = useState(false)
   const router   = useRouter()
   const pathname = usePathname()
   const supabase = createClient()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase.from('profiles').select('*').eq('id', user.id).single()
-        .then(({ data }) => setProfile(data))
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session?.user) {
+        setProfile(null)
+        setAuthReady(true)
+        return
+      }
+      supabase.from('profiles').select('*').eq('id', session.user.id).maybeSingle()
+        .then(({ data }) => {
+          setProfile(data)
+          setAuthReady(true)
+        })
     })
+    return () => subscription.unsubscribe()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname])
+  }, [])
 
   async function signOut() {
     await supabase.auth.signOut()
-    setProfile(null)
-    router.push('/')
-    router.refresh()
+    window.location.href = '/'
   }
 
   const isDriver  = profile?.role === 'driver'
@@ -86,7 +93,9 @@ export function Navbar() {
         <div className="flex items-center gap-2">
           <LanguageSwitcher />
 
-          {profile ? (
+          {!authReady ? (
+            <div className="hidden sm:block w-24 h-8 bg-gray-100 rounded-lg animate-pulse" />
+          ) : profile ? (
             <div className="relative">
               <button
                 onClick={() => setDropOpen(o => !o)}
@@ -170,7 +179,7 @@ export function Navbar() {
               {t('myCard')}
             </Link>
           )}
-          {!profile && (
+          {authReady && !profile && (
             <>
               <Link href="/login" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 rounded-lg">{t('login')}</Link>
               <Link href="/register" onClick={() => setMenuOpen(false)} className="block px-3 py-2.5 text-sm font-medium text-blue-900 hover:bg-blue-50 rounded-lg">{t('register')}</Link>

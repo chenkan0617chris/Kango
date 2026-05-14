@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { CreateBidInput } from '@/types'
 
 // GET /api/bids?demand_id=xxx — list bids for a demand
@@ -57,12 +56,16 @@ export async function POST(request: NextRequest) {
   // Verify user is a driver
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, vehicle_plate, vehicle_type')
     .eq('id', user.id)
     .single()
 
   if (profile?.role !== 'driver') {
     return NextResponse.json({ error: '只有司机可以报价' }, { status: 403 })
+  }
+
+  if (!profile?.vehicle_plate) {
+    return NextResponse.json({ error: '请先完善您的车辆信息才能报价，前往「车辆设置」页面填写' }, { status: 403 })
   }
 
   const body: CreateBidInput = await request.json()
@@ -75,12 +78,33 @@ export async function POST(request: NextRequest) {
   // Check demand is still open
   const { data: demand } = await supabase
     .from('demands')
-    .select('status')
+    .select('status, budget_min, budget_max, pax_count')
     .eq('id', demand_id)
     .single()
 
-  if (!demand || !['pending', 'bidding'].includes(demand.status)) {
+  if (!demand || demand.status !== 'pending') {
     return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
+  }
+
+  // Seat check: driver's vehicle must seat at least pax_count + 1 (passengers + driver)
+  const driverSeats = parseInt(profile?.vehicle_type?.match(/(\d+)座/)?.[1] ?? '0') || 0
+  const requiredSeats = demand.pax_count + 1
+  if (driverSeats > 0 && driverSeats < requiredSeats) {
+    return NextResponse.json({
+      error: `您的车辆（${driverSeats}座）不满足此次行程要求，该行程需要至少 ${requiredSeats} 座车辆（${demand.pax_count} 名乘客 + 司机）`,
+    }, { status: 400 })
+  }
+
+  const priceInCents = Math.round(price * 100)
+  if (demand.budget_min && priceInCents < demand.budget_min) {
+    return NextResponse.json({
+      error: `报价不得低于游客最低预算 $${Math.round(demand.budget_min / 100)} AUD`,
+    }, { status: 400 })
+  }
+  if (demand.budget_max && priceInCents > demand.budget_max) {
+    return NextResponse.json({
+      error: `报价不得高于游客最高预算 $${Math.round(demand.budget_max / 100)} AUD`,
+    }, { status: 400 })
   }
 
   const { data, error } = await supabase
@@ -101,12 +125,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '您已对该需求报过价' }, { status: 409 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  // Transition demand to 'bidding' if still 'pending' — use admin client to bypass RLS
-  if (demand.status === 'pending') {
-    const admin = createAdminClient()
-    await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
   }
 
   return NextResponse.json({ data }, { status: 201 })

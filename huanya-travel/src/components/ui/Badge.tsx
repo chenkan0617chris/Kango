@@ -14,9 +14,9 @@ const colorClasses: Record<Color, string> = {
   purple: 'bg-purple-100 text-purple-700',
 }
 
-const demandStatusColor: Record<DemandStatus, Color> = {
+const demandStatusColor: Record<string, Color> = {
   pending:     'gray',
-  bidding:     'blue',
+  bidding:     'gray',  // legacy — DB rows may still have this until migration runs
   confirmed:   'green',
   in_progress: 'purple',
   completed:   'gray',
@@ -43,9 +43,13 @@ export function Badge({ label, color = 'gray' }: BadgeProps) {
   )
 }
 
-export function DemandStatusBadge({ status }: { status: DemandStatus }) {
+export function DemandStatusBadge({ status, mode, alreadyBid }: { status: DemandStatus; mode?: 'driver' | 'tourist'; alreadyBid?: boolean }) {
   const t = useTranslations('badge')
-  return <Badge label={t(status)} color={demandStatusColor[status]} />
+  if (mode === 'driver' && status === 'pending') {
+    if (alreadyBid) return <Badge label={t('alreadyBid')} color="yellow" />
+    return <Badge label={t('available')} color="green" />
+  }
+  return <Badge label={t(status)} color={demandStatusColor[status] ?? 'gray'} />
 }
 
 export function BidStatusBadge({ status }: { status: BidStatus }) {

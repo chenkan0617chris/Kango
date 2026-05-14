@@ -65,7 +65,7 @@ export default async function DriverBidsPage({
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (profile?.role !== 'driver') redirect('/driver/marketplace')
 
@@ -156,7 +156,7 @@ export default async function DriverBidsPage({
           </div>
         ) : (
           <div className="space-y-8">
-            {(['active', 'accepted', 'ended'] as const).map(group => {
+            {(['accepted', 'active', 'ended'] as const).map(group => {
               const groupBids = grouped[group]
               if (groupBids.length === 0) return null
 

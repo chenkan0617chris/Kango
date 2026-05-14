@@ -2,9 +2,22 @@ import Link from 'next/link'
 import { Car, Shield, TrendingDown, Zap, Star, ArrowRight } from 'lucide-react'
 import { Navbar } from '@/components/shared/Navbar'
 import { getTranslations } from 'next-intl/server'
+import { createClient } from '@/lib/supabase/server'
 
 export default async function HomePage() {
   const t = await getTranslations('home')
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let role: string | null = null
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .maybeSingle()
+    role = profile?.role ?? null
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -26,20 +39,24 @@ export default async function HomePage() {
             {t('sub')}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/demand/create"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-900 rounded-xl text-base font-semibold hover:bg-blue-50 transition-colors shadow-lg"
-            >
-              <Car size={18} />
-              {t('ctaPost')}
-              <ArrowRight size={16} />
-            </Link>
-            <Link
-              href="/driver/marketplace"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-800/60 backdrop-blur border border-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-800 transition-colors"
-            >
-              {t('ctaDriver')}
-            </Link>
+            {role !== 'driver' && (
+              <Link
+                href="/demand/create"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-blue-900 rounded-xl text-base font-semibold hover:bg-blue-50 transition-colors shadow-lg"
+              >
+                <Car size={18} />
+                {t('ctaPost')}
+                <ArrowRight size={16} />
+              </Link>
+            )}
+            {role !== 'tourist' && (
+              <Link
+                href="/driver/marketplace"
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-800/60 backdrop-blur border border-blue-600 text-white rounded-xl text-base font-semibold hover:bg-blue-800 transition-colors"
+              >
+                {t('ctaDriver')}
+              </Link>
+            )}
           </div>
         </div>
       </section>

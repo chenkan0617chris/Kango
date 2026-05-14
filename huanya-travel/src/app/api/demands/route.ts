@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
   if (mine) {
     query = query.eq('tourist_id', user.id)
   } else {
-    query = query.in('status', ['pending', 'bidding'])
+    query = query.eq('status', 'pending')
   }
 
   const { data, error } = await query
@@ -54,7 +54,9 @@ export async function POST(request: NextRequest) {
     .insert({
       tourist_id:   user.id,
       pickup_loc,
+      waypoints:    (body.waypoints ?? []).filter((w: string) => w.trim()),
       dropoff_loc,
+      return_loc:   body.return_loc?.trim() || null,
       pickup_detail: body.pickup_detail ?? null,
       travel_date,
       travel_time:  body.travel_time ?? null,

@@ -2,28 +2,51 @@
 
 import { useState } from 'react'
 import { DemandCard } from '@/components/shared/DemandCard'
-import { BidModal } from '@/components/shared/BidModal'
+import { BidModal, type DriverVehicle } from '@/components/shared/BidModal'
 import { useRealtimeDemands } from '@/hooks/useRealtimeDemands'
 import { Inbox, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import type { Demand } from '@/types'
 
+type SortOption = 'newest' | 'price' | 'date'
+
 interface Props {
   initialDemands: Demand[]
+  myBidDemandIds: string[]
+  driverVehicles: DriverVehicle[]
+  driverSeats: number
 }
 
-export function MarketplaceClient({ initialDemands }: Props) {
+export function MarketplaceClient({ initialDemands, myBidDemandIds, driverVehicles, driverSeats }: Props) {
   const t = useTranslations('marketplace')
   const { demands } = useRealtimeDemands(initialDemands)
   const [activeDemand, setActiveDemand] = useState<Demand | null>(null)
-  const [justBid, setJustBid]           = useState<Set<string>>(new Set())
+  const [justBid, setJustBid] = useState<Set<string>>(new Set(myBidDemandIds))
+  const [sort, setSort] = useState<SortOption>('newest')
 
   function handleBidSuccess(demandId: string) {
     setJustBid(prev => new Set(prev).add(demandId))
   }
 
-  const available = demands.filter(d => ['pending', 'bidding'].includes(d.status) && !justBid.has(d.id))
-  const bidded    = demands.filter(d => justBid.has(d.id))
+  function sortDemands(list: Demand[]): Demand[] {
+    return [...list].sort((a, b) => {
+      switch (sort) {
+        case 'price':
+          return (b.budget_max ?? 0) - (a.budget_max ?? 0)
+        case 'date':
+          return new Date(a.travel_date).getTime() - new Date(b.travel_date).getTime()
+        case 'newest':
+        default:
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      }
+    })
+  }
+
+  // Hide demands the driver's vehicle can't service (seat count check, 0 = unknown vehicle)
+  const canService = (d: Demand) => driverSeats === 0 || driverSeats >= d.pax_count + 1
+  const available     = sortDemands(demands.filter(d => d.status === 'pending' && !justBid.has(d.id) && canService(d)))
+  const bidded        = demands.filter(d => justBid.has(d.id))
+  const sortOptions: SortOption[] = ['newest', 'price', 'date']
 
   return (
     <>
@@ -45,10 +68,28 @@ export function MarketplaceClient({ initialDemands }: Props) {
         <div className="space-y-8">
           {available.length > 0 && (
             <section>
-              <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-                {t('available', { count: available.length })}
-              </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between gap-4 mb-3 flex-wrap gap-y-2">
+                <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
+                  {t('available', { count: available.length })}
+                </h2>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-gray-400">{t('sortLabel')}:</span>
+                  {sortOptions.map(option => (
+                    <button
+                      key={option}
+                      onClick={() => setSort(option)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                        sort === option
+                          ? 'bg-blue-900 text-white border-blue-900'
+                          : 'text-gray-500 border-gray-200 hover:border-blue-300 hover:text-blue-800'
+                      }`}
+                    >
+                      {t(`sort_${option}` as any)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-3">
                 {available.map(demand => (
                   <DemandCard
                     key={demand.id}
@@ -67,12 +108,13 @@ export function MarketplaceClient({ initialDemands }: Props) {
               <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 flex items-center gap-1.5">
                 <RefreshCw size={13} /> {t('bidded')}
               </h2>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 opacity-60">
+              <div className="space-y-3 opacity-60">
                 {bidded.map(demand => (
                   <DemandCard
                     key={demand.id}
                     demand={demand}
                     mode="driver"
+                    alreadyBid
                     bidCount={(demand.bids as unknown as { count: number }[])?.[0]?.count ?? 0}
                   />
                 ))}
@@ -86,6 +128,7 @@ export function MarketplaceClient({ initialDemands }: Props) {
         demand={activeDemand}
         onClose={() => setActiveDemand(null)}
         onSuccess={handleBidSuccess}
+        driverVehicles={driverVehicles}
       />
     </>
   )

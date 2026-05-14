@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { Navbar } from '@/components/shared/Navbar'
 import { MarketplaceClient } from './MarketplaceClient'
 import { Car } from 'lucide-react'
@@ -17,30 +18,48 @@ export default async function MarketplacePage() {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role')
+    .select('role, vehicle_plate, vehicle_type')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (profile?.role !== 'driver') redirect('/demand/create')
+  if (!profile?.vehicle_plate) redirect(`/profile/driver/${user.id}`)
 
-  const { data } = await supabase
+  const admin = createAdminClient()
+
+  const { data } = await admin
     .from('demands')
     .select(`
       *,
       tourist:profiles!tourist_id(id, full_name, avatar_url, rating, total_trips),
       bids!demand_id(count)
     `)
-    .in('status', ['pending', 'bidding'])
+    .eq('status', 'pending')
     .order('travel_date', { ascending: true })
     .limit(50)
 
   const initialDemands = (data ?? []) as Demand[]
 
+  // Load demands this driver already bid on
+  const { data: myBids } = await supabase
+    .from('bids')
+    .select('demand_id')
+    .eq('driver_id', user.id)
+    .in('status', ['active', 'accepted'])
+
+  const myBidDemandIds = (myBids ?? []).map((b: { demand_id: string }) => b.demand_id)
+
+  const driverVehicles = profile?.vehicle_type && profile?.vehicle_plate
+    ? [{ vehicle_type: profile.vehicle_type, vehicle_plate: profile.vehicle_plate }]
+    : []
+
+  const driverSeats = parseInt(profile?.vehicle_type?.match(/(\d+)座/)?.[1] ?? '0') || 0
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-10">
+      <main className="flex-1 max-w-2xl mx-auto w-full px-4 py-10">
         <div className="flex items-start justify-between mb-2">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
@@ -56,7 +75,7 @@ export default async function MarketplacePage() {
           <span>{t('tip')}</span>
         </div>
 
-        <MarketplaceClient initialDemands={initialDemands} />
+        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} driverVehicles={driverVehicles} driverSeats={driverSeats} />
       </main>
     </div>
   )

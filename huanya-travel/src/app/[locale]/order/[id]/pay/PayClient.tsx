@@ -1,10 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from '@/i18n/navigation'
 import { Button } from '@/components/ui/Button'
 import { formatAUD } from '@/lib/utils'
-import { CreditCard, Lock } from 'lucide-react'
+import { Lock, CreditCard } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 
 interface Props {
@@ -14,7 +13,6 @@ interface Props {
 
 export function PayClient({ orderId, depositAmount }: Props) {
   const t = useTranslations('order')
-  const router = useRouter()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,16 +20,16 @@ export function PayClient({ orderId, depositAmount }: Props) {
     setLoading(true)
     setError('')
     try {
-      const res = await fetch(`/api/orders/${orderId}`, {
-        method: 'PATCH',
+      const res = await fetch('/api/stripe/checkout', {
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'pay_deposit' }),
+        body: JSON.stringify({ orderId }),
       })
       const json = await res.json()
       if (!res.ok) {
         setError(json.error ?? t('payError'))
       } else {
-        router.push(`/order/${orderId}`)
+        window.location.href = json.url
       }
     } catch {
       setError(t('networkError'))
@@ -43,26 +41,14 @@ export function PayClient({ orderId, depositAmount }: Props) {
   return (
     <div>
       <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-6">
-        <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+        <h2 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
           <CreditCard size={16} className="text-gray-500" />
           {t('payMethod')}
         </h2>
-        <div className="space-y-3">
-          <div className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-400 bg-gray-50 font-mono tracking-widest">
-            4242 4242 4242 4242
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-400 bg-gray-50">
-              12 / 28
-            </div>
-            <div className="border border-gray-200 rounded-lg px-3 py-2.5 text-sm text-gray-400 bg-gray-50">
-              CVC
-            </div>
-          </div>
-          <p className="text-xs text-gray-400 flex items-center gap-1">
-            <Lock size={10} />
-            {t('testMode')}
-          </p>
+        <p className="text-sm text-gray-500">{t('stripeNote')}</p>
+        <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+          <Lock size={11} />
+          {t('stripeSecurity')}
         </div>
       </div>
 
