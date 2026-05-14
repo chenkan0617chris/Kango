@@ -12,6 +12,28 @@ import type { Demand } from '@/types'
 const PLATFORM_FEE_RATE = 0.10
 const FUEL_COST_PER_KM  = 0.25
 
+const QUICK_TAGS_ZH = [
+  '普通话全程服务',
+  '含高速过路费',
+  '全程车载WiFi',
+  '可提供儿童安全座椅',
+  '接机含等待服务',
+  '大行李厢',
+  '支持微信/支付宝付款',
+  '行程可灵活调整',
+]
+
+const QUICK_TAGS_EN = [
+  'Mandarin service',
+  'Tolls included',
+  'In-car WiFi',
+  'Child seat available',
+  'Flight tracking & wait',
+  'Large boot space',
+  'WeChat/Alipay accepted',
+  'Flexible itinerary',
+]
+
 export interface DriverVehicle {
   vehicle_type: string
   vehicle_plate: string
@@ -45,6 +67,18 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
 
   if (!demand) return null
 
+  const quickTags = locale === 'zh' ? QUICK_TAGS_ZH : QUICK_TAGS_EN
+  const sep = locale === 'zh' ? '，' : ', '
+
+  function toggleTag(tag: string) {
+    setMessage(m => {
+      if (m.includes(tag)) {
+        return m.replace(tag, '').replace(/^[,，\s]+|[,，\s]+$/g, '').replace(/[,，\s]{2,}/g, sep)
+      }
+      return m ? `${m}${sep}${tag}` : tag
+    })
+  }
+
   function fmt(n: number) { return `$${n.toFixed(0)}` }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -54,11 +88,6 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
     setError('')
 
     const priceNum = parseFloat(price)
-    if (demand!.budget_min && priceNum * 100 < demand!.budget_min) {
-      setError(t('errorPriceMin', { min: Math.round(demand!.budget_min / 100) }))
-      setLoading(false)
-      return
-    }
     if (demand!.budget_max && priceNum * 100 > demand!.budget_max) {
       setError(t('errorPriceMax', { max: Math.round(demand!.budget_max / 100) }))
       setLoading(false)
@@ -114,9 +143,9 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
             {t('pax', { count: demand.pax_count, luggage: demand.luggage_count })}
           </span>
         </div>
-        {demand.budget_min && demand.budget_max && (
+        {demand.budget_max && (
           <p className="text-xs text-blue-600 mt-1.5">
-            {t('budget', { min: demand.budget_min / 100, max: demand.budget_max / 100 })}
+            {t('budget', { max: Math.round(demand.budget_max / 100) })}
           </p>
         )}
       </div>
@@ -230,12 +259,33 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
           )}
         </div>
 
-        <Textarea
-          label={t('messageSection')}
-          placeholder={t('messagePlaceholder')}
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-        />
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">{t('messageSection')}</label>
+          <div className="flex flex-wrap gap-2">
+            {quickTags.map(tag => {
+              const active = message.includes(tag)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    active
+                      ? 'bg-blue-900 text-white border-blue-900'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-900 hover:text-blue-900'
+                  }`}
+                >
+                  {active ? '✓ ' : '+ '}{tag}
+                </button>
+              )
+            })}
+          </div>
+          <Textarea
+            placeholder={t('messagePlaceholder')}
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+          />
+        </div>
 
         <div className="flex gap-3 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1">

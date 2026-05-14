@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   // Verify user is a driver
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, vehicle_plate')
+    .select('role, vehicle_plate, vehicle_type')
     .eq('id', user.id)
     .single()
 
@@ -78,12 +78,21 @@ export async function POST(request: NextRequest) {
   // Check demand is still open
   const { data: demand } = await supabase
     .from('demands')
-    .select('status, budget_min, budget_max')
+    .select('status, budget_min, budget_max, pax_count')
     .eq('id', demand_id)
     .single()
 
   if (!demand || demand.status !== 'pending') {
     return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
+  }
+
+  // Seat check: driver's vehicle must seat at least pax_count + 1 (passengers + driver)
+  const driverSeats = parseInt(profile?.vehicle_type?.match(/(\d+)座/)?.[1] ?? '0') || 0
+  const requiredSeats = demand.pax_count + 1
+  if (driverSeats > 0 && driverSeats < requiredSeats) {
+    return NextResponse.json({
+      error: `您的车辆（${driverSeats}座）不满足此次行程要求，该行程需要至少 ${requiredSeats} 座车辆（${demand.pax_count} 名乘客 + 司机）`,
+    }, { status: 400 })
   }
 
   const priceInCents = Math.round(price * 100)

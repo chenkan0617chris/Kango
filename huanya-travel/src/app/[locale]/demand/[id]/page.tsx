@@ -4,7 +4,8 @@ import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { BidsClient } from './BidsClient'
 import { DemandStatusBadge } from '@/components/ui/Badge'
-import { MapPin, ArrowRight, Calendar, Users, Luggage, DollarSign, ChevronLeft } from 'lucide-react'
+import { TripRoute } from '@/components/shared/TripRoute'
+import { Calendar, Users, Luggage, DollarSign, ChevronLeft } from 'lucide-react'
 import { formatDate, formatAUD } from '@/lib/utils'
 import { getTranslations } from 'next-intl/server'
 import type { Demand } from '@/types'
@@ -49,6 +50,13 @@ export default async function DemandDetailPage({
   const demand = data as Demand & { bids: any[] }
   const bids: any[] = demand.bids ?? []
 
+  const { data: existingOrder } = await supabase
+    .from('orders')
+    .select('id, payment_status')
+    .eq('demand_id', id)
+    .eq('tourist_id', user.id)
+    .maybeSingle()
+
   // Sort: active first, then by price ascending
   const sortedBids = [...bids].sort((a, b) => {
     if (a.status === 'active' && b.status !== 'active') return -1
@@ -69,27 +77,19 @@ export default async function DemandDetailPage({
           {t('backToTrips')}
         </Link>
 
-        {/* Route header */}
-        <div className="flex items-start justify-between gap-4 mb-6">
-          <div className="flex items-start gap-3 min-w-0">
-            <MapPin size={20} className="text-blue-900 shrink-0 mt-0.5" />
-            <div className="min-w-0">
-              <p className="font-bold text-gray-900 text-xl leading-tight truncate">
-                {demand.pickup_loc}
-              </p>
-              {(demand.waypoints ?? []).map((stop, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-gray-500 mt-1">
-                  <ArrowRight size={13} className="shrink-0" />
-                  <p className="truncate text-sm">{stop}</p>
-                </div>
-              ))}
-              <div className="flex items-center gap-1.5 text-gray-500 mt-1">
-                <ArrowRight size={14} />
-                <p className="truncate">{demand.dropoff_loc}</p>
-              </div>
-            </div>
+        {/* Route timeline */}
+        <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-5">
+          <div className="flex items-start justify-between gap-4">
+            <TripRoute
+              pickup={demand.pickup_loc}
+              dropoff={demand.dropoff_loc}
+              waypoints={demand.waypoints}
+              returnLoc={demand.return_loc}
+              pickupDetail={demand.pickup_detail}
+              size="lg"
+            />
+            <DemandStatusBadge status={demand.status} />
           </div>
-          <DemandStatusBadge status={demand.status} />
         </div>
 
         {/* Trip meta */}
@@ -109,10 +109,10 @@ export default async function DemandDetailPage({
             <Luggage size={14} className="text-gray-400 shrink-0" />
             {demand.luggage_count} {t('luggage2')}
           </span>
-          {(demand.budget_min || demand.budget_max) && (
+          {demand.budget_max && (
             <span className="flex items-center gap-2">
               <DollarSign size={14} className="text-gray-400 shrink-0" />
-              {demand.budget_min ? formatAUD(demand.budget_min) : '–'} – {demand.budget_max ? formatAUD(demand.budget_max) : '–'}
+              ≤ {formatAUD(demand.budget_max)}
             </span>
           )}
         </div>
@@ -124,14 +124,7 @@ export default async function DemandDetailPage({
           </div>
         )}
 
-        {demand.pickup_detail && (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 mb-6 text-sm text-gray-600">
-            <span className="font-medium">{t('pickupDetailLabel')}</span>
-            {demand.pickup_detail}
-          </div>
-        )}
-
-        <BidsClient demand={demand} bids={sortedBids} />
+        <BidsClient demand={demand} bids={sortedBids} existingOrder={existingOrder ?? null} />
       </main>
     </div>
   )

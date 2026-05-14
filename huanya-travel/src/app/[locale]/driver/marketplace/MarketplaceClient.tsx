@@ -14,9 +14,10 @@ interface Props {
   initialDemands: Demand[]
   myBidDemandIds: string[]
   driverVehicles: DriverVehicle[]
+  driverSeats: number
 }
 
-export function MarketplaceClient({ initialDemands, myBidDemandIds, driverVehicles }: Props) {
+export function MarketplaceClient({ initialDemands, myBidDemandIds, driverVehicles, driverSeats }: Props) {
   const t = useTranslations('marketplace')
   const { demands } = useRealtimeDemands(initialDemands)
   const [activeDemand, setActiveDemand] = useState<Demand | null>(null)
@@ -41,7 +42,9 @@ export function MarketplaceClient({ initialDemands, myBidDemandIds, driverVehicl
     })
   }
 
-  const available     = sortDemands(demands.filter(d => d.status === 'pending' && !justBid.has(d.id)))
+  // Hide demands the driver's vehicle can't service (seat count check, 0 = unknown vehicle)
+  const canService = (d: Demand) => driverSeats === 0 || driverSeats >= d.pax_count + 1
+  const available     = sortDemands(demands.filter(d => d.status === 'pending' && !justBid.has(d.id) && canService(d)))
   const bidded        = demands.filter(d => justBid.has(d.id))
   const sortOptions: SortOption[] = ['newest', 'price', 'date']
 

@@ -21,26 +21,17 @@ export default function CreateDemandPage() {
     travel_time:  '',
     pax_count:    '2',
     luggage_count:'1',
-    budget_min:   '',
     budget_max:   '',
     note:         '',
   })
-  const [waypoints, setWaypoints]           = useState<string[]>([])
-  const [hasReturn, setHasReturn]           = useState(false)
-  const [returnLoc, setReturnLoc]           = useState('')
-  const [sameAsPickup, setSameAsPickup]     = useState(true)
+  const [waypoints, setWaypoints]       = useState<string[]>([])
+  const [returnLoc, setReturnLoc]       = useState('')
+  const [sameAsPickup, setSameAsPickup] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError]     = useState('')
 
   function set(key: keyof typeof form, value: string) {
-    setForm(f => {
-      const next = { ...f, [key]: value }
-      // Keep return_loc in sync when sameAsPickup is active
-      if (key === 'pickup_loc' && hasReturn && sameAsPickup) {
-        setReturnLoc(value)
-      }
-      return next
-    })
+    setForm(f => ({ ...f, [key]: value }))
   }
 
   function addStop() {
@@ -55,14 +46,30 @@ export default function CreateDemandPage() {
     setWaypoints(w => w.map((s, idx) => idx === i ? val : s))
   }
 
-  function toggleReturn(checked: boolean) {
-    setHasReturn(checked)
-    if (checked && sameAsPickup) setReturnLoc(form.pickup_loc)
-  }
-
   function toggleSameAsPickup(checked: boolean) {
     setSameAsPickup(checked)
-    if (checked) setReturnLoc(form.pickup_loc)
+    if (!checked) setReturnLoc(form.pickup_loc)
+  }
+
+  const QUICK_NOTES = [
+    '需要儿童安全座椅',
+    '司机会讲普通话',
+    '途中停靠景点拍照',
+    '接机含航班追踪',
+    '深夜 / 凌晨接送',
+    '宠物随行',
+    '行李较多 / 大件',
+    '全程无障碍辅助',
+  ]
+
+  function toggleQuickNote(tag: string) {
+    setForm(f => {
+      const current = f.note
+      if (current.includes(tag)) {
+        return { ...f, note: current.replace(tag, '').replace(/^[,，\s]+|[,，\s]+$/g, '').replace(/[,，\s]{2,}/g, '，') }
+      }
+      return { ...f, note: current ? `${current}，${tag}` : tag }
+    })
   }
 
   const today = new Date().toISOString().split('T')[0]
@@ -84,13 +91,12 @@ export default function CreateDemandPage() {
           pickup_loc:    form.pickup_loc,
           waypoints:     waypoints.filter(w => w.trim()),
           dropoff_loc:   form.dropoff_loc,
-          return_loc:    hasReturn && returnLoc.trim() ? returnLoc.trim() : undefined,
+          return_loc:    sameAsPickup ? form.pickup_loc.trim() || undefined : returnLoc.trim() || undefined,
           pickup_detail: form.pickup_detail || undefined,
           travel_date:   form.travel_date,
           travel_time:   form.travel_time || undefined,
           pax_count:     parseInt(form.pax_count),
           luggage_count: parseInt(form.luggage_count),
-          budget_min:    form.budget_min ? parseFloat(form.budget_min) : undefined,
           budget_max:    form.budget_max ? parseFloat(form.budget_max) : undefined,
           note:          form.note || undefined,
         }),
@@ -197,45 +203,33 @@ export default function CreateDemandPage() {
               <p className="text-xs text-gray-400">{t('stopsHint')}</p>
             )}
 
-            {/* Return trip */}
+            {/* Return location */}
             <div className="border-t border-gray-100 pt-4">
               <label className="flex items-center gap-2.5 cursor-pointer select-none">
                 <input
                   type="checkbox"
-                  checked={hasReturn}
-                  onChange={e => toggleReturn(e.target.checked)}
+                  checked={sameAsPickup}
+                  onChange={e => toggleSameAsPickup(e.target.checked)}
                   className="w-4 h-4 rounded border-gray-300 text-blue-900 focus:ring-blue-700"
                 />
-                <span className="text-sm font-medium text-gray-700">{t('returnEnable')}</span>
+                <span className="text-sm font-medium text-gray-700">{t('returnSameAsPickup')}</span>
               </label>
 
-              {hasReturn && (
-                <div className="mt-3 pl-6 space-y-3">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                    <input
-                      type="checkbox"
-                      checked={sameAsPickup}
-                      onChange={e => toggleSameAsPickup(e.target.checked)}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-900 focus:ring-blue-700"
-                    />
-                    <span className="text-sm text-gray-600">{t('returnSameAsPickup')}</span>
-                  </label>
+              {sameAsPickup && form.pickup_loc && (
+                <p className="mt-2 pl-6 text-xs text-gray-400 flex items-center gap-1">
+                  <MapPin size={11} />
+                  {form.pickup_loc}
+                </p>
+              )}
 
-                  {!sameAsPickup && (
-                    <LocationInput
-                      label={t('returnLoc')}
-                      value={returnLoc}
-                      onChange={setReturnLoc}
-                      placeholder={t('returnLocPlaceholder')}
-                    />
-                  )}
-
-                  {sameAsPickup && form.pickup_loc && (
-                    <p className="text-xs text-gray-400 flex items-center gap-1">
-                      <MapPin size={11} />
-                      {form.pickup_loc}
-                    </p>
-                  )}
+              {!sameAsPickup && (
+                <div className="mt-3 pl-6">
+                  <LocationInput
+                    label={t('returnLoc')}
+                    value={returnLoc}
+                    onChange={setReturnLoc}
+                    placeholder={t('returnLocPlaceholder')}
+                  />
                 </div>
               )}
             </div>
@@ -300,32 +294,41 @@ export default function CreateDemandPage() {
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <DollarSign size={16} className="text-blue-900" /> {t('budgetSection')}
             </h2>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label={t('budgetMin')}
-                type="number"
-                min="0"
-                placeholder={t('budgetMinPlaceholder')}
-                value={form.budget_min}
-                onChange={e => set('budget_min', e.target.value)}
-                hint={t('budgetHint')}
-              />
-              <Input
-                label={t('budgetMax')}
-                type="number"
-                min="0"
-                placeholder={t('budgetMaxPlaceholder')}
-                value={form.budget_max}
-                onChange={e => set('budget_max', e.target.value)}
-              />
-            </div>
+            <Input
+              label={t('budgetMax')}
+              type="number"
+              min="0"
+              placeholder={t('budgetMaxPlaceholder')}
+              value={form.budget_max}
+              onChange={e => set('budget_max', e.target.value)}
+              hint={t('budgetHint')}
+            />
           </div>
 
           {/* Notes */}
           <div className="bg-white rounded-2xl border border-gray-200 p-6">
-            <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-4">
+            <h2 className="font-semibold text-gray-900 flex items-center gap-2 mb-3">
               <FileText size={16} className="text-blue-900" /> {t('notesSection')}
             </h2>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {QUICK_NOTES.map(tag => {
+                const active = form.note.includes(tag)
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => toggleQuickNote(tag)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                      active
+                        ? 'bg-blue-900 text-white border-blue-900'
+                        : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-900 hover:text-blue-900'
+                    }`}
+                  >
+                    {active ? '✓ ' : '+ '}{tag}
+                  </button>
+                )
+              })}
+            </div>
             <Textarea
               placeholder={t('notesPlaceholder')}
               value={form.note}

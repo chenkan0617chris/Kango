@@ -15,7 +15,7 @@ const ALL_STATUSES: DemandStatus[] = [
 ]
 
 interface Props {
-  demands: (Demand & { bids: { count: number }[] })[]
+  demands: (Demand & { bids: { count: number }[], orders?: { amount: number }[] })[]
 }
 
 export function DashboardClient({ demands }: Props) {
@@ -90,6 +90,7 @@ export function DashboardClient({ demands }: Props) {
               mode="tourist"
               bidCount={demand.bids?.[0]?.count ?? 0}
               href={`/demand/${demand.id}`}
+              amount={demand.orders?.[0]?.amount}
             />
           ))}
         </div>

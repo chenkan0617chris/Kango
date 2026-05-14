@@ -53,6 +53,8 @@ export default async function MarketplacePage() {
     ? [{ vehicle_type: profile.vehicle_type, vehicle_plate: profile.vehicle_plate }]
     : []
 
+  const driverSeats = parseInt(profile?.vehicle_type?.match(/(\d+)座/)?.[1] ?? '0') || 0
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -73,7 +75,7 @@ export default async function MarketplacePage() {
           <span>{t('tip')}</span>
         </div>
 
-        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} driverVehicles={driverVehicles} />
+        <MarketplaceClient initialDemands={initialDemands} myBidDemandIds={myBidDemandIds} driverVehicles={driverVehicles} driverSeats={driverSeats} />
       </main>
     </div>
   )

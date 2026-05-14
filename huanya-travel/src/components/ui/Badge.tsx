@@ -43,9 +43,10 @@ export function Badge({ label, color = 'gray' }: BadgeProps) {
   )
 }
 
-export function DemandStatusBadge({ status, mode }: { status: DemandStatus; mode?: 'driver' | 'tourist' }) {
+export function DemandStatusBadge({ status, mode, alreadyBid }: { status: DemandStatus; mode?: 'driver' | 'tourist'; alreadyBid?: boolean }) {
   const t = useTranslations('badge')
   if (mode === 'driver' && status === 'pending') {
+    if (alreadyBid) return <Badge label={t('alreadyBid')} color="yellow" />
     return <Badge label={t('available')} color="green" />
   }
   return <Badge label={t(status)} color={demandStatusColor[status] ?? 'gray'} />

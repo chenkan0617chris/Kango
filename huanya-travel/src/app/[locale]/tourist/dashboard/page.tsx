@@ -19,11 +19,11 @@ export default async function TouristDashboard() {
 
   const { data: demands } = await supabase
     .from('demands')
-    .select(`*, bids!demand_id(count)`)
+    .select(`*, bids!demand_id(count), orders!demand_id(amount)`)
     .eq('tourist_id', user.id)
     .order('created_at', { ascending: false })
 
-  const list = (demands ?? []) as (Demand & { bids: { count: number }[] })[]
+  const list = (demands ?? []) as (Demand & { bids: { count: number }[], orders: { amount: number }[] })[]
 
   return (
     <div className="min-h-screen flex flex-col">
