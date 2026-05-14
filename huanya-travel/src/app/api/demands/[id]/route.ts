@@ -59,7 +59,7 @@ export async function PATCH(
 
   // Accept a bid: mark bid accepted, reject others, create order, lock demand
   if (body.action === 'accept_bid' && body.bid_id) {
-    if (!['pending', 'bidding'].includes(demand.status)) {
+    if (!['pending'].includes(demand.status)) {
       return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
     }
 
@@ -119,7 +119,7 @@ export async function PATCH(
 
   // Cancel demand
   if (body.status === 'cancelled') {
-    if (!['pending', 'bidding'].includes(demand.status)) {
+    if (!['pending'].includes(demand.status)) {
       return NextResponse.json({ error: '该状态不可取消' }, { status: 400 })
     }
     const { data, error } = await supabase

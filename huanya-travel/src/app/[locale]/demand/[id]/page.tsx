@@ -27,11 +27,11 @@ export default async function DemandDetailPage({
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (profile?.role !== 'tourist') redirect('/driver/marketplace')
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('demands')
     .select(`
       *,
@@ -42,9 +42,9 @@ export default async function DemandDetailPage({
     `)
     .eq('id', id)
     .eq('tourist_id', user.id)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) redirect('/tourist/dashboard')
+  if (!data) redirect('/tourist/dashboard')
 
   const demand = data as Demand & { bids: any[] }
   const bids: any[] = demand.bids ?? []
@@ -77,7 +77,13 @@ export default async function DemandDetailPage({
               <p className="font-bold text-gray-900 text-xl leading-tight truncate">
                 {demand.pickup_loc}
               </p>
-              <div className="flex items-center gap-1.5 text-gray-500 mt-0.5">
+              {(demand.waypoints ?? []).map((stop, i) => (
+                <div key={i} className="flex items-center gap-1.5 text-gray-500 mt-1">
+                  <ArrowRight size={13} className="shrink-0" />
+                  <p className="truncate text-sm">{stop}</p>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5 text-gray-500 mt-1">
                 <ArrowRight size={14} />
                 <p className="truncate">{demand.dropoff_loc}</p>
               </div>

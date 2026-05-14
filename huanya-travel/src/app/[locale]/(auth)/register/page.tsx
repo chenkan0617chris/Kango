@@ -41,7 +41,7 @@ export default function RegisterPage() {
       setLoading(false)
       setSuccessMsg(t('confirmEmail'))
     } else {
-      router.push(role === 'driver' ? '/driver/vehicle-setup' : '/demand/create')
+      router.push(role === 'driver' ? `/profile/driver/${data.user!.id}` : '/demand/create')
       router.refresh()
     }
   }

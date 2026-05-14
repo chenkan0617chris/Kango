@@ -20,18 +20,18 @@ export default async function PayPage({
 
   if (!user) redirect('/login')
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('orders')
     .select(`
       *,
-      demand:demands!demand_id(pickup_loc, dropoff_loc, travel_date, travel_time, pax_count),
+      demand:demands!demand_id(pickup_loc, waypoints, dropoff_loc, travel_date, travel_time, pax_count),
       bid:bids!bid_id(price, vehicle_info, driver:profiles!driver_id(full_name))
     `)
     .eq('id', id)
     .eq('tourist_id', user.id)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) redirect('/tourist/dashboard')
+  if (!data) redirect('/tourist/dashboard')
 
   if (data.payment_status !== 'unpaid') redirect(`/order/${id}`)
 
@@ -56,6 +56,12 @@ export default async function PayPage({
               <MapPin size={14} className="text-blue-900 shrink-0 mt-0.5" />
               <div className="min-w-0">
                 <p className="font-medium text-gray-900 truncate">{order.demand.pickup_loc}</p>
+                {(order.demand.waypoints ?? []).map((stop: string, i: number) => (
+                  <div key={i} className="flex items-center gap-1 text-gray-500">
+                    <ArrowRight size={11} className="shrink-0" />
+                    <p className="truncate text-xs">{stop}</p>
+                  </div>
+                ))}
                 <div className="flex items-center gap-1 text-gray-500">
                   <ArrowRight size={11} />
                   <p className="truncate">{order.demand.dropoff_loc}</p>

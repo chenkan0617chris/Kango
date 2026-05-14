@@ -18,9 +18,13 @@ const AUSSIE_LOCATIONS = [
   // Sydney
   'Sydney CBD, NSW',
   'Sydney Airport (SYD), Mascot',
+  'Sydney International Airport (SYD), Mascot',
+  'Wentworth Point, NSW',
   'Blue Mountains, NSW',
   'Hunter Valley, NSW',
   'Bondi Beach, NSW',
+  'Kiama, NSW',
+  'Gerringong, NSW',
   'Jervis Bay, NSW',
   // Queensland
   'Brisbane CBD, QLD',

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { CreateBidInput } from '@/types'
 
 // GET /api/bids?demand_id=xxx — list bids for a demand
@@ -83,7 +82,7 @@ export async function POST(request: NextRequest) {
     .eq('id', demand_id)
     .single()
 
-  if (!demand || !['pending', 'bidding'].includes(demand.status)) {
+  if (!demand || demand.status !== 'pending') {
     return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
   }
 
@@ -117,16 +116,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '您已对该需求报过价' }, { status: 409 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  // Transition demand to 'bidding' if still 'pending' — use admin client to bypass RLS
-  if (demand.status === 'pending') {
-    try {
-      const admin = createAdminClient()
-      await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
-    } catch (e) {
-      console.error('Failed to transition demand to bidding:', e)
-    }
   }
 
   return NextResponse.json({ data }, { status: 201 })

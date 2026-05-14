@@ -23,7 +23,7 @@ export function BidsClient({ demand, bids }: Props) {
   const [accepting, setAccepting] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const isOpen = ['pending', 'bidding'].includes(demand.status)
+  const isOpen = demand.status === 'pending'
 
   async function handleAccept(bidId: string) {
     setAccepting(bidId)

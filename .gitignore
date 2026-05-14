@@ -1,2 +1,5 @@
 .claude
 .playwright-mcp
+*.png
+test-results/
+**/supabase/.temp/
