@@ -15,7 +15,7 @@ export async function GET(request: NextRequest) {
   const { data: staleDemands } = await admin
     .from('demands')
     .select('id')
-    .in('status', ['pending', 'bidding'])
+    .eq('status', 'pending')
     .lt('created_at', threeDaysAgo)
 
   if (!staleDemands || staleDemands.length === 0) {

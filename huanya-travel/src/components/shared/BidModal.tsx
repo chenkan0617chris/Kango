@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useLocale } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { Modal } from '@/components/ui/Modal'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Input'
@@ -11,6 +11,28 @@ import type { Demand } from '@/types'
 
 const PLATFORM_FEE_RATE = 0.10
 const FUEL_COST_PER_KM  = 0.25
+
+const QUICK_TAGS_ZH = [
+  '普通话全程服务',
+  '含高速过路费',
+  '全程车载WiFi',
+  '可提供儿童安全座椅',
+  '接机含等待服务',
+  '大行李厢',
+  '支持微信/支付宝付款',
+  '行程可灵活调整',
+]
+
+const QUICK_TAGS_EN = [
+  'Mandarin service',
+  'Tolls included',
+  'In-car WiFi',
+  'Child seat available',
+  'Flight tracking & wait',
+  'Large boot space',
+  'WeChat/Alipay accepted',
+  'Flexible itinerary',
+]
 
 export interface DriverVehicle {
   vehicle_type: string
@@ -26,6 +48,7 @@ interface BidModalProps {
 
 export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModalProps) {
   const locale = useLocale()
+  const t = useTranslations('bidModal')
   const [price,           setPrice]           = useState('')
   const [selectedVehicle, setSelectedVehicle] = useState<DriverVehicle | null>(driverVehicles[0] ?? null)
   const [message,         setMessage]         = useState('')
@@ -44,6 +67,18 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
 
   if (!demand) return null
 
+  const quickTags = locale === 'zh' ? QUICK_TAGS_ZH : QUICK_TAGS_EN
+  const sep = locale === 'zh' ? '，' : ', '
+
+  function toggleTag(tag: string) {
+    setMessage(m => {
+      if (m.includes(tag)) {
+        return m.replace(tag, '').replace(/^[,，\s]+|[,，\s]+$/g, '').replace(/[,，\s]{2,}/g, sep)
+      }
+      return m ? `${m}${sep}${tag}` : tag
+    })
+  }
+
   function fmt(n: number) { return `$${n.toFixed(0)}` }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,13 +88,8 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
     setError('')
 
     const priceNum = parseFloat(price)
-    if (demand!.budget_min && priceNum * 100 < demand!.budget_min) {
-      setError(`报价不得低于游客最低预算 $${Math.round(demand!.budget_min / 100)} AUD`)
-      setLoading(false)
-      return
-    }
     if (demand!.budget_max && priceNum * 100 > demand!.budget_max) {
-      setError(`报价不得高于游客最高预算 $${Math.round(demand!.budget_max / 100)} AUD`)
+      setError(t('errorPriceMax', { max: Math.round(demand!.budget_max / 100) }))
       setLoading(false)
       return
     }
@@ -78,7 +108,7 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
 
       const json = await res.json()
       if (!res.ok) {
-        setError(json.error ?? '提交失败，请重试')
+        setError(json.error ?? t('submitError'))
       } else {
         onSuccess(demand!.id)
         onClose()
@@ -86,14 +116,14 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
         setSelectedVehicle(driverVehicles[0] ?? null)
       }
     } catch {
-      setError('网络错误，请检查连接')
+      setError(t('networkError'))
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Modal open={!!demand} onClose={onClose} title="提交报价" maxWidth="md">
+    <Modal open={!!demand} onClose={onClose} title={t('title')} maxWidth="md">
       {/* Trip summary */}
       <div className="bg-blue-50 rounded-xl p-4 mb-5">
         <div className="flex items-center gap-2 text-sm font-medium text-blue-900 mb-2 flex-wrap">
@@ -110,12 +140,12 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
           </span>
           <span className="flex items-center gap-1">
             <Users size={12} />
-            {demand.pax_count} 人 · {demand.luggage_count} 件行李
+            {t('pax', { count: demand.pax_count, luggage: demand.luggage_count })}
           </span>
         </div>
-        {demand.budget_min && demand.budget_max && (
+        {demand.budget_max && (
           <p className="text-xs text-blue-600 mt-1.5">
-            游客预算：${demand.budget_min / 100} – ${demand.budget_max / 100} AUD
+            {t('budget', { max: Math.round(demand.budget_max / 100) })}
           </p>
         )}
       </div>
@@ -127,18 +157,20 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
 
         {/* Price input */}
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">报价金额 (AUD) <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700">
+            {t('priceLabel')} <span className="text-red-500">*</span>
+          </label>
           <input
             type="number"
             min="1"
             step="1"
-            placeholder="如：280"
+            placeholder={t('pricePlaceholder')}
             value={price}
             onChange={e => setPrice(e.target.value)}
             required
             className="w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
           />
-          <p className="text-xs text-gray-400">请输入整数，单位澳元</p>
+          <p className="text-xs text-gray-400">{t('priceHint')}</p>
         </div>
 
         {/* Profit calculator */}
@@ -146,20 +178,20 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
           <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
             <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
               <TrendingUp size={12} />
-              预计收益计算
+              {t('calcTitle')}
             </div>
             <div className="flex justify-between text-sm text-gray-700">
-              <span>总报价</span>
+              <span>{t('calcTotal')}</span>
               <span className="font-medium">{fmt(parseFloat(price))}</span>
             </div>
             <div className="flex justify-between text-sm text-gray-500">
-              <span>平台服务费 (10%)</span>
+              <span>{t('calcFee')}</span>
               <span className="text-red-500">－{fmt(calc.platformFee)}</span>
             </div>
             <div className="flex items-center justify-between gap-4 text-sm text-gray-500">
               <label className="flex items-center gap-1 shrink-0">
-                预计行驶
-                <span className="text-xs text-gray-400 ml-0.5">(可选)</span>
+                {t('calcKm')}
+                <span className="text-xs text-gray-400 ml-0.5">{t('calcOptional')}</span>
               </label>
               <div className="flex items-center gap-1.5">
                 <input
@@ -174,23 +206,25 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
               </div>
             </div>
             <div className="border-t border-gray-200 pt-2 flex justify-between items-center">
-              <span className="text-sm font-semibold text-gray-900">预计纯利</span>
+              <span className="text-sm font-semibold text-gray-900">{t('calcProfit')}</span>
               <span className={`text-base font-bold ${calc.netProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
                 {fmt(calc.netProfit)}
               </span>
             </div>
             <p className="text-[11px] text-gray-400 flex items-start gap-1">
               <Info size={10} className="shrink-0 mt-0.5" />
-              油费按 $0.25/km 估算（含车耗），实际以出行为准
+              {t('calcFuelNote')}
             </p>
           </div>
         )}
 
         {/* Vehicle selection cards */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">出行车辆 <span className="text-red-500">*</span></label>
+          <label className="block text-sm font-medium text-gray-700">
+            {t('vehicleSection')} <span className="text-red-500">*</span>
+          </label>
           {driverVehicles.length === 0 ? (
-            <p className="text-sm text-red-500">请先在车辆设置页填写车辆信息</p>
+            <p className="text-sm text-red-500">{t('noVehicle')}</p>
           ) : (
             <div className="grid gap-2">
               {driverVehicles.map((v, i) => {
@@ -214,7 +248,7 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
                         {v.vehicle_type}
                       </p>
                       <p className={`text-xs mt-0.5 ${selected ? 'text-blue-600' : 'text-gray-400'}`}>
-                        车牌：{v.vehicle_plate}
+                        {t('plateLabel')}{v.vehicle_plate}
                       </p>
                     </div>
                     {selected && <CheckCircle size={18} className="text-blue-900 shrink-0" />}
@@ -225,19 +259,40 @@ export function BidModal({ demand, onClose, onSuccess, driverVehicles }: BidModa
           )}
         </div>
 
-        <Textarea
-          label="补充说明（可选）"
-          placeholder="可说明您的服务优势、包含费用等"
-          value={message}
-          onChange={e => setMessage(e.target.value)}
-        />
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">{t('messageSection')}</label>
+          <div className="flex flex-wrap gap-2">
+            {quickTags.map(tag => {
+              const active = message.includes(tag)
+              return (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    active
+                      ? 'bg-blue-900 text-white border-blue-900'
+                      : 'bg-gray-50 text-gray-600 border-gray-200 hover:border-blue-900 hover:text-blue-900'
+                  }`}
+                >
+                  {active ? '✓ ' : '+ '}{tag}
+                </button>
+              )
+            })}
+          </div>
+          <Textarea
+            placeholder={t('messagePlaceholder')}
+            value={message}
+            onChange={e => setMessage(e.target.value)}
+          />
+        </div>
 
         <div className="flex gap-3 pt-1">
           <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
-            取消
+            {t('cancel')}
           </Button>
           <Button type="submit" loading={loading} disabled={!selectedVehicle} className="flex-1">
-            确认报价
+            {t('confirm')}
           </Button>
         </div>
       </form>

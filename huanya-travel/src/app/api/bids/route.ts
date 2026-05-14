@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import type { CreateBidInput } from '@/types'
 
 // GET /api/bids?demand_id=xxx — list bids for a demand
@@ -57,7 +56,7 @@ export async function POST(request: NextRequest) {
   // Verify user is a driver
   const { data: profile } = await supabase
     .from('profiles')
-    .select('role, vehicle_plate')
+    .select('role, vehicle_plate, vehicle_type')
     .eq('id', user.id)
     .single()
 
@@ -79,12 +78,21 @@ export async function POST(request: NextRequest) {
   // Check demand is still open
   const { data: demand } = await supabase
     .from('demands')
-    .select('status, budget_min, budget_max')
+    .select('status, budget_min, budget_max, pax_count')
     .eq('id', demand_id)
     .single()
 
-  if (!demand || !['pending', 'bidding'].includes(demand.status)) {
+  if (!demand || demand.status !== 'pending') {
     return NextResponse.json({ error: '该需求已关闭报价' }, { status: 400 })
+  }
+
+  // Seat check: driver's vehicle must seat at least pax_count + 1 (passengers + driver)
+  const driverSeats = parseInt(profile?.vehicle_type?.match(/(\d+)座/)?.[1] ?? '0') || 0
+  const requiredSeats = demand.pax_count + 1
+  if (driverSeats > 0 && driverSeats < requiredSeats) {
+    return NextResponse.json({
+      error: `您的车辆（${driverSeats}座）不满足此次行程要求，该行程需要至少 ${requiredSeats} 座车辆（${demand.pax_count} 名乘客 + 司机）`,
+    }, { status: 400 })
   }
 
   const priceInCents = Math.round(price * 100)
@@ -117,16 +125,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '您已对该需求报过价' }, { status: 409 })
     }
     return NextResponse.json({ error: error.message }, { status: 500 })
-  }
-
-  // Transition demand to 'bidding' if still 'pending' — use admin client to bypass RLS
-  if (demand.status === 'pending') {
-    try {
-      const admin = createAdminClient()
-      await admin.from('demands').update({ status: 'bidding' }).eq('id', demand_id)
-    } catch (e) {
-      console.error('Failed to transition demand to bidding:', e)
-    }
   }
 
   return NextResponse.json({ data }, { status: 201 })

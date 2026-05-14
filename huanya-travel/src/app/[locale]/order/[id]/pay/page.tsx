@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { Navbar } from '@/components/shared/Navbar'
 import { PayClient } from './PayClient'
-import { Shield, MapPin, ArrowRight } from 'lucide-react'
+import { TripRoute } from '@/components/shared/TripRoute'
+import { Shield } from 'lucide-react'
 import { formatAUD, formatDate } from '@/lib/utils'
 import { getTranslations } from 'next-intl/server'
 
@@ -20,18 +21,18 @@ export default async function PayPage({
 
   if (!user) redirect('/login')
 
-  const { data, error } = await supabase
+  const { data } = await supabase
     .from('orders')
     .select(`
       *,
-      demand:demands!demand_id(pickup_loc, dropoff_loc, travel_date, travel_time, pax_count),
+      demand:demands!demand_id(pickup_loc, waypoints, dropoff_loc, return_loc, travel_date, travel_time, pax_count),
       bid:bids!bid_id(price, vehicle_info, driver:profiles!driver_id(full_name))
     `)
     .eq('id', id)
     .eq('tourist_id', user.id)
-    .single()
+    .maybeSingle()
 
-  if (error || !data) redirect('/tourist/dashboard')
+  if (!data) redirect('/tourist/dashboard')
 
   if (data.payment_status !== 'unpaid') redirect(`/order/${id}`)
 
@@ -52,16 +53,13 @@ export default async function PayPage({
         <div className="bg-white rounded-2xl border border-gray-200 p-6 mb-5">
           <h2 className="font-semibold text-gray-900 mb-4">{t('paySummary')}</h2>
           <div className="space-y-3 text-sm">
-            <div className="flex items-start gap-2">
-              <MapPin size={14} className="text-blue-900 shrink-0 mt-0.5" />
-              <div className="min-w-0">
-                <p className="font-medium text-gray-900 truncate">{order.demand.pickup_loc}</p>
-                <div className="flex items-center gap-1 text-gray-500">
-                  <ArrowRight size={11} />
-                  <p className="truncate">{order.demand.dropoff_loc}</p>
-                </div>
-              </div>
-            </div>
+            <TripRoute
+              pickup={order.demand.pickup_loc}
+              dropoff={order.demand.dropoff_loc}
+              waypoints={order.demand.waypoints}
+              returnLoc={order.demand.return_loc}
+              size="sm"
+            />
 
             <div className="grid grid-cols-2 gap-2 pt-1">
               <div>

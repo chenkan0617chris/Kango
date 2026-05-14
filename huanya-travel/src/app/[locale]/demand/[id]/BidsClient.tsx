@@ -15,15 +15,16 @@ type BidWithDriver = Bid & { driver: Pick<Profile, 'id' | 'full_name' | 'avatar_
 interface Props {
   demand: Demand
   bids: BidWithDriver[]
+  existingOrder: { id: string; payment_status: string } | null
 }
 
-export function BidsClient({ demand, bids }: Props) {
+export function BidsClient({ demand, bids, existingOrder }: Props) {
   const t = useTranslations('demand')
   const router = useRouter()
   const [accepting, setAccepting] = useState<string | null>(null)
   const [error, setError] = useState('')
 
-  const isOpen = ['pending', 'bidding'].includes(demand.status)
+  const isOpen = demand.status === 'pending'
 
   async function handleAccept(bidId: string) {
     setAccepting(bidId)
@@ -149,10 +150,30 @@ export function BidsClient({ demand, bids }: Props) {
             )}
 
             {bid.status === 'accepted' && (
-              <div className="flex items-center gap-2 text-green-700 text-sm font-medium mt-1">
-                <CheckCircle size={14} />
-                {t('alreadySelected')}
-              </div>
+              existingOrder?.payment_status === 'unpaid' ? (
+                <Button
+                  size="sm"
+                  className="w-full"
+                  onClick={() => router.push(`/order/${existingOrder.id}/pay`)}
+                >
+                  <CheckCircle size={14} />
+                  {t('continuePay')}
+                </Button>
+              ) : existingOrder ? (
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => router.push(`/order/${existingOrder.id}`)}
+                >
+                  {t('viewOrder')}
+                </Button>
+              ) : (
+                <div className="flex items-center gap-2 text-green-700 text-sm font-medium mt-1">
+                  <CheckCircle size={14} />
+                  {t('alreadySelected')}
+                </div>
+              )
             )}
           </div>
         ))}

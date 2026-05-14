@@ -65,7 +65,7 @@ export default async function DriverBidsPage({
     .from('profiles')
     .select('role')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
 
   if (profile?.role !== 'driver') redirect('/driver/marketplace')
 

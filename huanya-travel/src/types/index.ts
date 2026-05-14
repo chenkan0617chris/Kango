@@ -1,6 +1,6 @@
 export type UserRole = 'tourist' | 'driver'
 
-export type DemandStatus = 'pending' | 'bidding' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
+export type DemandStatus = 'pending' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled'
 export type BidStatus = 'active' | 'accepted' | 'rejected' | 'withdrawn'
 export type PaymentStatus = 'unpaid' | 'deposited' | 'paid_in_full' | 'refunded'
 export type TripStatus = 'confirmed' | 'in_progress' | 'completed' | 'disputed' | 'cancelled'
@@ -28,7 +28,9 @@ export interface Demand {
   id: string
   tourist_id: string
   pickup_loc: string
+  waypoints: string[]          // intermediate stops in order
   dropoff_loc: string
+  return_loc: string | null    // optional return location
   pickup_detail: string | null
   travel_date: string
   travel_time: string | null
@@ -97,7 +99,9 @@ export type ApiResponse<T> = { data: T; error: null } | { data: null; error: str
 // Form types
 export interface CreateDemandInput {
   pickup_loc: string
+  waypoints?: string[]
   dropoff_loc: string
+  return_loc?: string
   pickup_detail?: string
   travel_date: string
   travel_time?: string
