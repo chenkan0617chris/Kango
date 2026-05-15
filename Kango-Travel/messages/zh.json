@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "环亚出行",
+    "name": "看够",
     "tagline": "澳洲华人包车平台 · 透明竞价"
   },
   "nav": {
@@ -28,7 +28,7 @@
     "stat2Label": "成功行程",
     "stat3Value": "4.9★",
     "stat3Label": "平均评分",
-    "whyTitle": "为什么选择环亚出行？",
+    "whyTitle": "为什么选择看够？",
     "feature1Title": "资金托管，安全放心",
     "feature1Desc": "游客预付定金由平台托管，行程完成后自动结算，司机不会跑单，游客不会被坑。",
     "feature2Title": "竞价模式，透明报价",
@@ -38,11 +38,11 @@
     "ctaTitle": "准备好了吗？",
     "ctaSub": "注册只需 30 秒，立刻发布您的第一个行程需求",
     "ctaBtn": "免费注册",
-    "footer": "© 2025 环亚出行 HuanYa Travel · ABN 12 345 678 901"
+    "footer": "© 2025 看够 Kango · ABN 12 345 678 901"
   },
   "auth": {
     "loginTitle": "欢迎回来",
-    "loginSub": "登录您的环亚出行账号",
+    "loginSub": "登录您的看够账号",
     "email": "邮箱",
     "password": "密码",
     "loginBtn": "登录",
@@ -50,7 +50,7 @@
     "registerNow": "立即注册",
     "invalidCredentials": "邮箱或密码错误",
     "registerTitle": "创建账号",
-    "registerSub": "加入环亚出行平台",
+    "registerSub": "加入看够平台",
     "iAm": "我是",
     "tourist": "游客/乘客",
     "touristDesc": "发布行程需求",

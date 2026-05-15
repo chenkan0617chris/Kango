@@ -21,7 +21,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
       </div>
 
       <p className="text-blue-300 text-xs mt-6">
-        © 2025 HuanYa Travel · Escrow Protection · Verified Drivers
+        © 2025 Kango · Escrow Protection · Verified Drivers
       </p>
     </div>
   )

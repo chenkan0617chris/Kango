@@ -68,7 +68,7 @@ export function Navbar() {
             <Car size={16} className="text-white" />
           </div>
           <span className="font-bold text-gray-900 text-lg tracking-tight">
-            {locale === 'zh' ? '环亚出行' : 'HuanYa Travel'}
+            {locale === 'zh' ? '看够' : 'Kango'}
           </span>
         </Link>
 
