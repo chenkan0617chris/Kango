@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'HuanYa Travel · Australia Charter Platform',
+  title: 'Kango · Australia Charter Platform',
   description: 'Transparent bidding, escrow protection — designed for Chinese Australians',
 }
 

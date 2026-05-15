@@ -1,6 +1,6 @@
 {
   "brand": {
-    "name": "HuanYa Travel",
+    "name": "Kango",
     "tagline": "Australia's Chinese Charter Platform · Transparent Bidding"
   },
   "nav": {
@@ -28,7 +28,7 @@
     "stat2Label": "Completed Trips",
     "stat3Value": "4.9★",
     "stat3Label": "Avg Rating",
-    "whyTitle": "Why HuanYa Travel?",
+    "whyTitle": "Why Kango?",
     "feature1Title": "Escrow Protection",
     "feature1Desc": "Tourist's deposit is held by the platform and released after the trip. No ghosting, no scams.",
     "feature2Title": "Competitive Bidding",
@@ -38,11 +38,11 @@
     "ctaTitle": "Ready to get started?",
     "ctaSub": "Sign up in 30 seconds and post your first trip.",
     "ctaBtn": "Sign Up Free",
-    "footer": "© 2025 HuanYa Travel · ABN 12 345 678 901"
+    "footer": "© 2025 Kango · ABN 12 345 678 901"
   },
   "auth": {
     "loginTitle": "Welcome back",
-    "loginSub": "Sign in to your HuanYa Travel account",
+    "loginSub": "Sign in to your Kango account",
     "email": "Email",
     "password": "Password",
     "loginBtn": "Sign In",
@@ -50,7 +50,7 @@
     "registerNow": "Sign up now",
     "invalidCredentials": "Invalid email or password",
     "registerTitle": "Create Account",
-    "registerSub": "Join HuanYa Travel",
+    "registerSub": "Join Kango",
     "iAm": "I am",
     "tourist": "Tourist / Passenger",
     "touristDesc": "Post trip requests",

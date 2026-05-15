@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Commands
 
-All commands run from `huanya-travel/`:
+All commands run from `kango-travel/`:
 
 ```bash
 npm run dev      # start dev server (localhost:3000)
