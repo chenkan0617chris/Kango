@@ -66,6 +66,18 @@ export default async function OrderPage({
 
   const depositAmount = Math.round(order.amount * 0.1)
 
+  // Has the tourist already reviewed this completed trip?
+  let hasReviewed = false
+  if (isTourist && order.trip_status === 'completed') {
+    const { data: existingReview } = await admin
+      .from('reviews')
+      .select('id')
+      .eq('order_id', id)
+      .eq('reviewer_id', user.id)
+      .maybeSingle()
+    hasReviewed = !!existingReview
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
@@ -231,6 +243,24 @@ export default async function OrderPage({
         {isDriver && isPaid && (
           <div className="mb-4">
             <DriverStatusClient orderId={id} tripStatus={order.trip_status} />
+          </div>
+        )}
+
+        {isTourist && order.trip_status === 'completed' && (
+          <div className="mb-3">
+            {hasReviewed ? (
+              <Link href={`/profile/driver/${order.driver_id}`}>
+                <Button variant="secondary" className="w-full">
+                  {t('viewMyReview')}
+                </Button>
+              </Link>
+            ) : (
+              <Link href={`/order/${id}/review`}>
+                <Button className="w-full">
+                  {t('reviewCta')}
+                </Button>
+              </Link>
+            )}
           </div>
         )}
 

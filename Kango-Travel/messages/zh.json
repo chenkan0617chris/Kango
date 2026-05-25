@@ -201,7 +201,28 @@
     "payBtn": "确认支付 {amount} 定金",
     "payDisclaimer": "点击即表示同意平台服务条款，定金在行程完成后结算给司机",
     "payError": "支付失败，请重试",
-    "networkError": "网络错误，请检查连接"
+    "networkError": "网络错误，请检查连接",
+    "reviewCta": "评价此次行程",
+    "viewMyReview": "查看我的评价"
+  },
+  "review": {
+    "title": "评价此次行程",
+    "subtitle": "对司机 {name} 的服务进行评价",
+    "ratingLabel": "您的评分",
+    "levels": {
+      "1": "非常差",
+      "2": "较差",
+      "3": "一般",
+      "4": "不错",
+      "5": "非常满意"
+    },
+    "commentLabel": "评价内容（可选）",
+    "commentPlaceholder": "分享您的真实感受，您的评价将帮助其他游客做出选择",
+    "commentMax": "{count}/500",
+    "submit": "提交评价",
+    "submitting": "提交中…",
+    "errorGeneric": "提交失败，请重试",
+    "errorNetwork": "网络错误，请检查连接"
   },
   "badge": {
     "pending": "待确认",

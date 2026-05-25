@@ -8,24 +8,10 @@ import {
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import { VehicleEditForm } from './VehicleEditForm'
+import { StarRating } from '@/components/ui/StarRating'
 import type { Profile } from '@/types'
 
 export const revalidate = 0
-
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <div className="flex items-center gap-0.5">
-      {[1, 2, 3, 4, 5].map(n => (
-        <Star
-          key={n}
-          size={14}
-          className={n <= Math.round(rating) ? 'text-yellow-400' : 'text-gray-200'}
-          fill={n <= Math.round(rating) ? 'currentColor' : 'currentColor'}
-        />
-      ))}
-    </div>
-  )
-}
 
 export default async function DriverProfilePage({
   params,
@@ -104,7 +90,7 @@ export default async function DriverProfilePage({
               </div>
 
               <div className="flex items-center gap-2 mb-3">
-                <StarRating rating={profile.rating} />
+                <StarRating value={profile.rating} size={14} />
                 <span className="text-sm font-semibold text-gray-900">
                   {profile.rating.toFixed(1)}
                 </span>
@@ -216,7 +202,7 @@ export default async function DriverProfilePage({
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      <StarRating rating={review.rating} />
+                      <StarRating value={review.rating} size={14} />
                       <span className="text-xs text-gray-500">{formatDate(review.created_at, locale)}</span>
                     </div>
                   </div>

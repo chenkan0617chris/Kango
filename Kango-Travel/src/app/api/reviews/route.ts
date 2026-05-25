@@ -1,6 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 
+// GET /api/reviews?driver_id=...&limit=20 — list reviews received by a driver (public)
+export async function GET(request: NextRequest) {
+  const supabase = await createClient()
+  const { searchParams } = new URL(request.url)
+
+  const driverId = searchParams.get('driver_id')
+  if (!driverId) {
+    return NextResponse.json({ error: '缺少 driver_id 参数' }, { status: 400 })
+  }
+
+  const limitParam = Number(searchParams.get('limit') ?? '20')
+  const limit = Number.isFinite(limitParam) && limitParam > 0
+    ? Math.min(Math.floor(limitParam), 50)
+    : 20
+
+  const { data, error } = await supabase
+    .from('reviews')
+    .select(`
+      *,
+      reviewer:profiles!reviewer_id(full_name, avatar_url)
+    `)
+    .eq('reviewee_id', driverId)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  return NextResponse.json({ data })
+}
+
 // POST /api/reviews — tourist submits a review for the driver after trip completion
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -12,6 +42,10 @@ export async function POST(request: NextRequest) {
 
   if (!order_id || !rating || rating < 1 || rating > 5) {
     return NextResponse.json({ error: '缺少必填字段' }, { status: 400 })
+  }
+
+  if (typeof comment === 'string' && comment.length > 500) {
+    return NextResponse.json({ error: '评论最多 500 字' }, { status: 400 })
   }
 
   const { data: order } = await supabase

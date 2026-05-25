@@ -201,7 +201,28 @@
     "payBtn": "Pay {amount} Deposit",
     "payDisclaimer": "By clicking you agree to our Terms of Service. Deposit is released to the driver after trip completion.",
     "payError": "Payment failed. Please try again.",
-    "networkError": "Network error. Please check your connection."
+    "networkError": "Network error. Please check your connection.",
+    "reviewCta": "Rate This Trip",
+    "viewMyReview": "View My Review"
+  },
+  "review": {
+    "title": "Rate This Trip",
+    "subtitle": "Rate your experience with {name}",
+    "ratingLabel": "Your Rating",
+    "levels": {
+      "1": "Very Bad",
+      "2": "Poor",
+      "3": "Okay",
+      "4": "Good",
+      "5": "Excellent"
+    },
+    "commentLabel": "Comment (optional)",
+    "commentPlaceholder": "Share your honest feedback — your review helps other tourists decide.",
+    "commentMax": "{count}/500",
+    "submit": "Submit Review",
+    "submitting": "Submitting…",
+    "errorGeneric": "Failed to submit. Please try again.",
+    "errorNetwork": "Network error. Please check your connection."
   },
   "badge": {
     "pending": "Pending",
